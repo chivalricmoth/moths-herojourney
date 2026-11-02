@@ -1,0 +1,13 @@
+{
+  "name": "north star",
+  "short_name": "north star",
+  "description": "Daily planner and life coach for the 2027 → 2030 plan",
+  "start_url": "./index.html#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16131a",
+  "theme_color": "#16131a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
