@@ -40,13 +40,13 @@ const MUSES=[
 
 /* g = time of day group; t = tier (0 candle, 1 lantern, 2 bonfire) */
 const RIT=[
- {id:'water',g:'morning',t:0,l:"Something warm in a cup you love",s:"Matcha, coffee, tisane. The first sip counts."},
+ {id:'water',g:'morning',t:0,l:"Something warm in a cup you love",s:"Matcha, coffee, tea. The first sip counts."},
  {id:'wash',g:'morning',t:0,l:"Wash up",s:"Teeth + face, or a shower if you can."},
  {id:'stretch',g:'morning',t:0,l:"Five minutes of floor stretching or yoga",s:"On the floor counts. Lying down counts."},
  {id:'tiny',g:'morning',t:0,l:"One two-minute task",s:"Open the HUSKY page. Fill one line. Done is done."},
  {id:'yoga',g:'morning',t:2,l:"Full yoga flow (15–20 minutes)",s:"Free on YouTube."},
  {id:'walk',g:'day',t:1,l:"A walk, any length",s:"Hallway laps count on bad-weather days."},
- {id:'eat',g:'day',t:1,l:"Produce + protein at your meals",s:"Add before you subtract. Cheese and sushi stay."},
+ {id:'eat',g:'day',t:1,l:"Produce + protein at your meals",s:"Add before you subtract. Aim for balance and color."},
  {id:'mover',g:'day',t:1,l:"One needle-mover (car, job, or health)",s:"See this month’s three."},
  {id:'uncomf',g:'day',t:1,l:"One uncomfortable thing",s:"A call, an email, a stare at the thing you’ve been avoiding."},
  {id:'lift',g:'day',t:2,l:"Strength session",s:"2–3 times a week is plenty. Today if it’s a lift day."},
