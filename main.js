@@ -14,7 +14,7 @@ function chrome(){
   document.documentElement.classList.toggle("pinned",pinned());
   const nav=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}" title="${l}">${ico(ic,r.name===k)}<span class="lb">${l}</span></a>`).join("");
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
-   <div class="rhead"><a class="av" href="#settings" title="Settings">${avatarHtml()}</a><div class="who lb"><a class="wordmark" href="#today" style="font-size:1.5rem">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div></div>
+   <div class="rhead"><a class="av" href="#settings" title="Settings">${avatarHtml()}</a><div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div></div>
    <div class="rnav">${nav}</div><div class="rsep"></div>
    <div class="rq">
     <button data-act="cycleHouse" title="Accent colour"><span class="dot"></span><span class="lb">Accent</span></button>
@@ -39,7 +39,7 @@ function render(){
 }
 function afterRemoteChange(){
   const a=document.activeElement;
-  if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)){render();toast("updated from your other device")}
+  if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)){render();toast("Another device has been busy. This one is up to date now.")}
 }
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 
@@ -58,7 +58,7 @@ document.addEventListener("input",e=>{
   if(t.id==="aq"){aq=t.value;const l=$("archList");if(l)l.innerHTML=archDays();return}
   const k=t.dataset&&t.dataset.k;if(!k)return;
   if(t.type==="radio"&&!t.checked)return;
-  sp(k,t.type==="checkbox"?t.checked:t.value);save();
+  sp(k,t.type==="checkbox"?t.checked:t.value);save();if(/\/rit\//.test(k)&&t.checked)setTimeout(()=>celebrate(curDay(),false),120);
   if(/\/(steps|sleep|k)$/.test(k))liveUpdate();
   if((t.type==="checkbox"||t.type==="radio")&&t.dataset.re)render();
 });
@@ -68,7 +68,7 @@ document.addEventListener("change",e=>{
   if(t.id==="avf"&&t.files[0]){setAvatar(t.files[0]);t.value="";return}
   if(t.id==="imp"&&t.files[0]){
     const r=new FileReader();
-    r.onload=()=>{try{const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.settings)throw 0;st=normalize(mergeState(st,normalize(o)));save();render();toast("restored (merged with what was here)")}catch(x){toast("that file doesn’t look like a backup")}};
+    r.onload=()=>{try{const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.settings)throw 0;st=normalize(mergeState(st,normalize(o)));save();render();toast("restored (merged with what was here)")}catch(x){toast("That isn’t a backup. Pick the .json file you downloaded from Settings.")}};
     r.readAsText(t.files[0]);t.value="";return;
   }
   if(t.dataset&&t.dataset.k&&t.type!=="checkbox"&&t.type!=="radio")deferRender();
@@ -82,11 +82,11 @@ document.addEventListener("click",async e=>{
    case"pin":LS.pinned=!LS.pinned;persistLocal();render();break;
    case"savePin":sp("settings/pinBoard",$("pinUrl").value.trim());save();render();if(!document.getElementById("pinjs")){const s=document.createElement("script");s.id="pinjs";s.async=true;s.src="https://assets.pinterest.com/js/pinit.js";document.body.appendChild(s)}else if(window.PinUtils)PinUtils.build();break;
    case"go":location.hash=D.h;break;
-   case"tick":sp(`days/${dk}/rit/${D.id}`,true);save();render();break;
+   case"tick":sp(`days/${dk}/rit/${D.id}`,true);save();render();celebrate(dk,false);break;
    case"goto":{const el=$(D.t);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});const f=el.querySelector("input,textarea");if(f)setTimeout(()=>f.focus({preventScroll:true}),350)}break}
    case"water":{const c=+gp(`days/${dk}/water`)||0,n=+D.n;sp(`days/${dk}/water`,c===n?n-1:n);save();render();break}
    case"rate":{const c=+gp(`days/${dk}/${D.f}`)||0,n=+D.n;sp(`days/${dk}/${D.f}`,c===n?0:n);save();render();break}
-   case"markDone":{const d=st.days[dk]||(st.days[dk]={});sp(`days/${dk}/done`,!d.done);save();render();if(st.days[dk].done)toast("day closed. well done.");break}
+   case"markDone":{const d=st.days[dk]||(st.days[dk]={});sp(`days/${dk}/done`,!d.done);save();render();if(st.days[dk].done)celebrate(dk,true);break}
    case"muse":st.notes.muse=Math.floor(Math.random()*MUSES.length);st.su.notes=Date.now();save();render();break;
    case"sym":sp(`days/${dk}/sym/${D.s}`,!gp(`days/${dk}/sym/${D.s}`));save();render();break;
    case"flow":sp(`days/${dk}/flow`,gp(`days/${dk}/flow`)===D.f?"":D.f);save();render();break;
@@ -95,7 +95,7 @@ document.addEventListener("click",async e=>{
    case"periodUndo":{const idx=st.periods.findIndex(p=>p.s===D.d);if(idx>=0){delItem("periods",idx);save();render()}break}
    case"periodAdd":{const v=$("pstart")&&$("pstart").value;if(!v)return toast("pick a date");if(!st.periods.some(p=>p.s===v))addItem("periods",{s:v});save();render();toast("added");break}
    case"delPeriod":delItem("periods",i);save();render();break;
-   case"saveWeight":{const d=$("wd").value,w=parseFloat($("wv").value);if(!d||!isFinite(w))return toast("add a date and weight");upsertWeight(d,w);save();render();toast("weigh-in saved");break}
+   case"saveWeight":{const d=$("wd").value,w=parseFloat($("wv").value);if(!d||!isFinite(w))return toast("add a date and weight");upsertWeight(d,w);save();render();toast("Weigh-in saved. It goes in the drawer.");break}
    case"addJob":{const c=$("jc").value.trim(),r=$("jr").value.trim();if(!c&&!r)return toast("add a company or role");addItem("jobs",{d:todayKey(),c,r,s:$("js").value});save();render();break}
    case"delJob":delItem("jobs",i);save();render();break;
    case"addSave":{const amt=parseFloat($("sa").value);if(!isFinite(amt))return toast("add an amount");addItem("savings",{d:$("sd").value||todayKey(),amt,bucket:$("sb").value,note:$("sn").value});save();render();toast("deposited");break}
@@ -104,7 +104,7 @@ document.addEventListener("click",async e=>{
    case"theme":LS.theme=D.v;persistLocal();applyLook();render();break;
    case"toggleTheme":LS.theme=document.documentElement.dataset.theme==="dark"?"light":"dark";persistLocal();applyLook();break;
    case"pickHouse":LS.house=D.h;persistLocal();applyLook();render();break;
-   case"cycleHouse":{const n=(HOUSES.findIndex(h=>h[0]===LS.house)+1)%HOUSES.length;LS.house=HOUSES[n][0];persistLocal();applyLook();toast("house: "+HOUSES[n][1]);if(R().name==="settings")render();break}
+   case"cycleHouse":{const n=(HOUSES.findIndex(h=>h[0]===LS.house)+1)%HOUSES.length;LS.house=HOUSES[n][0];persistLocal();applyLook();toast("accent: "+HOUSES[n][1]);if(R().name==="settings")render();break}
    case"rmAvatar":sp("settings/avatar","");save();render();break;
    case"syncSave":saveConn();toast("connection saved");break;
    case"syncNow":saveConn();await syncNow(true);if(R().name==="settings")render();break;
@@ -148,6 +148,6 @@ document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="hidden"&&dirty){persist();if(LS.syncUrl&&LS.auto)syncNow(false)}
 });
 window.addEventListener("pagehide",()=>{if(dirty)persist()});
-try{const n=loggedDays().length;if(n>7&&!LS.syncUrl&&(!LS.lastBackup||Date.now()-LS.lastBackup>7*864e5))setTimeout(()=>toast("It’s been a week: back up or connect sync in Settings"),2200)}catch(e){}
+try{const n=loggedDays().length;if(n>7&&!LS.syncUrl&&(!LS.lastBackup||Date.now()-LS.lastBackup>7*864e5))setTimeout(()=>toast("It’s been a week. Download a backup or connect sync in Settings, before the hedgehog gets into the drawer."),2200)}catch(e){}
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 hydrateImgs(document);
