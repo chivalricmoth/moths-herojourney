@@ -12,9 +12,9 @@ let aq="",amo="",trRange=90;
 
 function avatarHtml(cls=""){
   const a=st.settings.avatar,n=(st.settings.name||"").trim();
-  return `<div class="avatar ${cls}">${a?`<img src="${a}" alt="">`:esc(n?n[0].toUpperCase():"✦")}</div>`;
+  return `<div class="av ${cls}">${a?`<img src="${a}" alt="">`:esc(n?n[0].toUpperCase():"")||'<i class="ph-fill ph-sparkle"></i>'}</div>`;
 }
-const head=(t,sub,acts="")=>`<div class="ph"><div><h1>${t}</h1>${sub?`<div class="sub">${sub}</div>`:""}</div><div class="acts">${acts}</div></div>`;
+const head=(t,sub,acts="")=>`<div class="pgh"><div><h1>${t}</h1>${sub?`<div class="sub">${sub}</div>`:""}</div><div class="acts">${acts}</div></div>`;
 const chip=(t,on)=>`<span class="chip ${on?"on":""}">${t}</span>`;
 
 /* ============================================================ TODAY */
