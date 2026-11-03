@@ -10,13 +10,17 @@ const ico=(n,f)=>`<i class="ph${f?"-fill":""} ph-${n}"></i>`;
 const pinned=()=>!!LS.pinned;
 
 function chrome(){
-  const r=R(),nm=(st.settings.name||"").trim(),mo=monthNear(todayKey());
+  const r=R(),nm=(st.settings.name||"").trim(),mo=monthNear(todayKey()),ss=starStats();
+  const dpar=dayParts(todayKey()),dp=Math.round(dpar.filter(Boolean).length/dpar.length*100);
   document.documentElement.classList.toggle("pinned",pinned());
+  document.documentElement.classList.toggle("focus",!!LS.focus&&r.name==="today");
   const nav=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}" title="${l}">${ico(ic,r.name===k)}<span class="lb">${l}</span></a>`).join("");
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
    <div class="rhead"><a class="av" href="#settings" title="Settings">${avatarHtml()}</a><div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div></div>
-   <div class="rnav">${nav}</div><div class="rsep"></div>
+   <a class="rprog" href="#today" title="Today"><span class="ring" style="--p:${dp}"><b>${dp}</b></span><span class="t lb">today<small>${ss.stars} stars${ss.run>1?` · run ${ss.run}`:""}</small></span></a>
+   <div class="rsep"></div><div class="rnav">${nav}</div><div class="rsep"></div>
    <div class="rq">
+    <button data-act="focus" class="${LS.focus?"on":""}" title="Focus mode (Today)">${ico("crosshair",!!LS.focus)}<span class="lb">Focus mode</span></button>
     <button data-act="cycleHouse" title="Accent colour"><span class="dot"></span><span class="lb">Accent</span></button>
     <button data-act="toggleTheme" class="themeBtn-w" title="Light / dark"><span class="themeBtn"></span><span class="lb">Light / dark</span></button></div>
    <div class="rfoot">
@@ -24,19 +28,47 @@ function chrome(){
     <button data-act="pin" title="Pin sidebar">${ico(pinned()?"push-pin-slash":"push-pin")}<span class="lb">${pinned()?"Unpin":"Pin open"}</span></button>
     <div class="rnav"><a href="#settings" class="${r.name==="settings"?"on":""}">${ico("gear-six",r.name==="settings")}<span class="lb">Settings</span></a></div>
    </div></nav>`;
-  $("topbar").innerHTML=`<a class="wordmark" href="#today">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
+  $("topbar").innerHTML=`<a class="wordmark" href="#today">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="focus" aria-label="Focus mode"><i class="ph ph-crosshair"></i></button><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
   $("tabs").innerHTML=NAVS.filter(n=>TABS.includes(n[0])).map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
 }
 function render(){
   const y=window.scrollY,r=R();
-  chrome();applyLook();
+  muDestroy();chrome();applyLook();
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
   $("main").innerHTML=fn(r.arg);
+  muInit();
   setSyncState(syncing?"busy":syncMsg?"err":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
   window.scrollTo(0,y);
   const tc=document.querySelector(".tile.cur");if(tc)tc.parentElement.scrollLeft=Math.max(0,tc.offsetLeft-20);
 }
+
+/* ---------- muuri masonry: drag by the middle light only ---------- */
+let MUG=null,MUR=null,muT=0;
+function muDestroy(){clearTimeout(muT);if(MUR){MUR.disconnect();MUR=null}if(MUG){try{MUG.destroy(false)}catch(e){}MUG=null}}
+function muRefresh(){clearTimeout(muT);muT=setTimeout(()=>{if(!MUG||MUG.getItems().some(i=>i.isDragging()))return;MUG.refreshItems();MUG.layout()},40)}
+function saveLayout(){
+  if(!MUG)return;
+  const pg=MUG.getElement().dataset.page,L=JSON.parse(JSON.stringify(LAY(pg))),vis=MUG.getItems().map(i=>i.getElement().dataset.id);
+  L.o=vis.concat((L.o||[]).filter(x=>!vis.includes(x)));sp("notes/layout/"+pg,L);save();
+}
+function muInit(){
+  const el=document.querySelector(".mu");if(!el||typeof Muuri==="undefined")return;
+  el.classList.add("on");
+  MUG=new Muuri(el,{items:".mi",dragEnabled:true,dragHandle:".lt-move",layoutDuration:260,layoutEasing:"ease",
+    dragRelease:{duration:260,easing:"ease"},layout:{fillGaps:true,rounding:false},
+    dragPlaceholder:{enabled:true,duration:200,createElement:i=>{const p=i.getElement().cloneNode(true);p.classList.add("mu-ph");p.removeAttribute("data-id");p.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));return p}}});
+  MUG.on("dragEnd",saveLayout);
+  if(window.ResizeObserver){MUR=new ResizeObserver(muRefresh);el.querySelectorAll(".card").forEach(c=>MUR.observe(c))}
+  el.addEventListener("load",muRefresh,true);
+}
+document.addEventListener("keydown",e=>{ /* keyboard: arrows on the move light reorder */
+  const b=e.target.closest&&e.target.closest(".lt-move");if(!b||!MUG)return;
+  const d={ArrowLeft:-1,ArrowUp:-1,ArrowRight:1,ArrowDown:1}[e.key];if(!d)return;e.preventDefault();
+  const mi=b.closest(".mi"),its=MUG.getItems(),i=its.findIndex(x=>x.getElement()===mi),j=i+d;
+  if(j<0||j>=its.length)return;MUG.move(i,j);saveLayout();b.focus();
+});
+
 function afterRemoteChange(){
   const a=document.activeElement;
   if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)){render();toast("Another device has been busy. This one is up to date now.")}
@@ -109,11 +141,9 @@ document.addEventListener("click",async e=>{
    case"syncSave":saveConn();toast("connection saved");break;
    case"syncNow":saveConn();await syncNow(true);if(R().name==="settings")render();break;
    case"export":{LS.lastBackup=Date.now();persistLocal();const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="northstar-backup-"+todayKey()+".json";l.click();URL.revokeObjectURL(u);render();break}
-   case"fold":{LS.fold=LS.fold||{};LS.fold[D.id]=!LS.fold[D.id];persistLocal();const c=$(D.id);if(c)c.classList.toggle("folded",!!LS.fold[D.id]);break}
-   case"custom":customOpen=!customOpen;render();break;
-   case"toggleCard":LS.hide=LS.hide||{};LS.hide[D.id]=!LS.hide[D.id];persistLocal();render();break;
+   case"fold":{LS.fold=LS.fold||{};LS.fold[D.id]=!LS.fold[D.id];persistLocal();const c=$(D.id);if(c)c.classList.toggle("folded",!!LS.fold[D.id]);muRefresh();break}
    case"dense":LS.dense=D.v;persistLocal();applyLook();render();break;
-   case"resetLayout":LS.hide={};LS.fold={};LS.dense="cozy";persistLocal();applyLook();render();toast("layout reset");break;
+   case"resetLayout":LS.hide={};LS.fold={};LS.dense="cozy";sp("notes/layout",{});save();persistLocal();applyLook();render();toast("layout reset");break;
    case"visDel":sp("notes/vision",visOf().filter(v=>v.id!==D.id));save();render();break;
    case"visCap":{const v=visOf().find(x=>x.id===D.id);const c=prompt("Caption",v?v.c||"":"");if(c!==null&&v){sp("notes/vision",visOf().map(x=>x.id===D.id?Object.assign({},x,{c:c.trim()}):x));save();render()}break}
    case"reset":if(confirm("Erase all progress on THIS device? If sync is on, the Drive copy stays and can be pulled back. Download a backup first if unsure.")){st=def();persist();render()}break;
@@ -126,12 +156,9 @@ function saveConn(){
 }
 
 /* ---------- images: vision uploads, drag-drop, lightbox, avatar removal ---------- */
-document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.vis&&t.files&&t.files.length){addVision([...t.files]);t.value=""}});
-document.addEventListener("dragover",e=>{if(e.target.closest&&e.target.closest("#vdrop")){e.preventDefault();e.target.closest("#vdrop").classList.add("over")}});
-document.addEventListener("dragleave",e=>{const d=e.target.closest&&e.target.closest("#vdrop");if(d)d.classList.remove("over")});
-document.addEventListener("drop",e=>{if(e.target.closest&&e.target.closest("#vdrop")){e.preventDefault();addVision([...e.dataTransfer.files])}});
+
 document.addEventListener("click",e=>{
-  const im=e.target.closest(".masonry img");
+  const im=e.target.closest(".mood img");
   if(im&&im.src){const lb=document.createElement("div");lb.className="lightbox";lb.innerHTML=`<img src="${im.src}" alt="">`;lb.onclick=()=>lb.remove();document.body.appendChild(lb)}
   if(e.target.closest('[data-act="rmAvatar"]'))sp("settings/avatarId","");
 },true);
