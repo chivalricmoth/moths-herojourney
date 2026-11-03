@@ -753,3 +753,34 @@ html.focus .line,html.focus .calbert{display:none}
 .vempty{padding:46px 20px;text-align:center;border:1.5px dashed var(--t30);border-radius:4px;font:italic 500 1.3rem/1.3 var(--serif);color:var(--accT)}
 @media(max-width:560px){.mood{column-width:140px}}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+
+/* ===== SIDEBAR v4 + CALBERT SPRITE ===== */
+.rail{background:var(--surf);-webkit-backdrop-filter:none;backdrop-filter:none;border-right:1px solid var(--t15);padding:16px 12px 12px;gap:0}
+.rail::before{display:none}
+.rhead{min-height:56px;margin:0 0 10px;padding-bottom:12px;border-bottom:1px solid var(--t08);gap:12px}
+.rail .av{width:40px;height:40px;margin:0 2px;border-radius:50%;outline:0;overflow:hidden;background:var(--surf2);border:1px solid var(--t30)}
+.rail .av::before{display:none}
+.rail .av img{filter:none;object-fit:cover;object-position:center}
+.rail .wordmark{font-size:1.9rem}
+.rhead .who small{font:400 .66rem var(--mono);letter-spacing:.06em;color:var(--t55)}
+
+.rnav{gap:2px}
+.rnav a,.rq button,.rfoot button{height:40px;padding:0 11px;border-radius:10px;font-size:.86rem;font-weight:600;color:var(--t75);gap:14px}
+.rnav a i,.rq button i,.rfoot button i{font-size:1.3rem;width:22px;color:var(--t55);transition:color var(--ease)}
+.rnav a:hover,.rq button:hover,.rfoot button:hover{background:var(--t08);color:var(--text)}
+.rnav a:hover i,.rq button:hover i,.rfoot button:hover i{color:var(--text)}
+.rnav a.on,.rq button.on{background:var(--a2);color:var(--text);box-shadow:none}
+.rnav a.on i,.rq button.on i{color:var(--accT)}
+.rnav a.on::before{left:-12px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0}
+
+.rsep{margin:10px 8px;background:var(--t08)}
+.rprog{padding:6px 8px;border-radius:10px;background:none;border:0}
+.rprog:hover{background:var(--t08)}
+.rfoot{margin-top:auto;padding-top:10px;border-top:1px solid var(--t08)}
+.syncline,.rstars{height:28px;padding:0 11px;font:400 .68rem var(--mono);letter-spacing:.04em;color:var(--t55)}
+.rail:hover:not(.pin),.rail:focus-within:not(.pin){box-shadow:var(--shadow)}
+
+/* Calbert sprite */
+.calbert .mothw{width:68px;height:68px;border-radius:12px;overflow:hidden;background:#1a1320;border:1px solid var(--a3);flex:none}
+.calbert .mothw img{display:block;width:100%;height:100%;object-fit:cover}
