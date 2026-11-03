@@ -20,7 +20,7 @@ const stk=(cls,...h)=>{const s=h.join("");return s?`<div class="stack ${cls}">${
 
 /* ---------- Calbert: pools, stars and the Run ---------- */
 const CAL_RUNS=[3,7,14,30,60,100,200,365],CAL_STARS=[10,25,50,100,250,500,1000];
-const CAL_RUN={3:"Three in a row. Don’t get ideas. [He does a small lap of the lampshade.]",7:"Seven days. In my day that got you a goat. I haven’t got a goat. There’s a star by your name instead, and it’s glued on, so don’t pick at it.",14:"A fortnight. The hedgehog owes me sardines and I’m over the moon about it.",30:"Thirty days. I’ve started leaving the lamp on for you. Don’t tell the Lady about the electricity.",60:"Sixty. I’ve stopped keeping count, which means I’ve been keeping count.",100:"A hundred days. In my day that got you a village and a sheep. I’ve got neither. [He flutters in a tight circle, then pretends he didn’t.]",200:"Two hundred. I’d need a bigger jar to be dissolved in. Hmph.",365:"A full year. The Lady has been informed, and she asked me to say nothing. I’ve said it anyway."};
+const CAL_RUN={3:"Three in a row. Don’t get ideas. [He does a small lap of the lampshade.]",7:"Seven days. In my day that got you a goat. I haven’t got a goat. There’s a star by your name instead, and it’s glued on, so don’t pick at it.",14:"A fortnight. The hedgehog owes me sardines and I’m furious about it.",30:"Thirty days. I’ve started leaving the lamp on for you. Don’t tell the Lady about the electricity.",60:"Sixty. I’ve stopped keeping count, which means I’ve been keeping count.",100:"A hundred days. In my day that got you a village and a sheep. I’ve got neither. [He flutters in a tight circle, then pretends he didn’t.]",200:"Two hundred. I’d need a bigger jar to be dissolved in. Hmph.",365:"A full year. The Lady has been informed, and she asked me to say nothing. I’ve said it anyway."};
 const CAL_STAR={10:"Ten stars. They’re glued on. Stop checking.",25:"Twenty-five. The drawer’s getting heavy.",50:"Fifty stars. I ran out of glue at forty and used jam.",100:"A hundred stars. I told the hedgehog and he wanted odds.",250:"Two hundred and fifty. I’d bet a tin of sardines you couldn’t count that high. You can. Hmph.",500:"Five hundred stars. The lampshade is getting crowded.",1000:"A thousand stars. I’m not crying, it’s the LED bulb."};
 const CAL_BACK=["You’re back. I’ll say nothing about it, loudly.","Back again. The Lady has been informed, and she wasn’t surprised. She’s never surprised, it’s tiresome.","There you are. The road’s where you left it. Sit down, I’ll watch."];
 const CAL_CLOSE=["Sealed. It’s in the drawer with the others.","Day closed. I’ll tell the Lady, and she’ll pretend not to be pleased.","That’s the day done. Go and put the kettle on, I’ll supervise.","Closed. The hedgehog just lost a bet, and I couldn’t be happier about it.","Done for today. Even the LED bulb looks impressed. Hmph.","Closed, and you did it without making a speech. I approve."];
@@ -87,7 +87,7 @@ function card(id,t,ic,body,o={}){
   if(hid(id))return"";
   return `<section class="card ${o.cls||""} ${folded(id)?"folded":""}" id="${id}"><h3><i class="ph ph-${ic}"></i>${t}${o.r!=null?`<span class="r">${o.r}</span>`:""}<button class="fold" data-act="fold" data-id="${id}" aria-label="Collapse or expand"><i class="ph ph-caret-down"></i></button></h3><div class="cb">${body}</div></section>`;
 }
-const fld=(lbl,why,body)=>`<div class="rv"><div class="qq">${lbl}</div><div class="why">${why}</div>${body}</div>`;
+const fld=(lbl,why,body)=>`<div class="rv"><div class="qq">${lbl}</div><div class="why">${calHtml(why)}</div>${body}</div>`;
 const rng=d=>`${md(d[0])} – ${md(d[6])}`;
 
 /* ---------- Today customisation ---------- */
@@ -102,7 +102,7 @@ function journalCard(dk,d){
   const has=!!gp(`days/${dk}/jfree`);
   return card("journal","Journal","notebook",`
    <div class="jtabs">${JT.map(([k,l,i])=>`<button class="${jtab===k?"on":""}" data-act="jtab" data-v="${k}"><i class="ph ph-${i}"></i>${l}${gp(`days/${dk}/j_${k}`)?'<span class="d"></span>':""}</button>`).join("")}</div>
-   <div class="prompt"><div><div class="q">${esc(q[0])}</div><div class="why">${esc(q[1]||"")}</div></div></div>
+   <div class="prompt"><div><div class="q">${esc(q[0])}</div><div class="why">${calHtml(q[1]||"")}</div></div></div>
    ${rte(`days/${dk}/j_${jtab}`,"write until it’s out of your head…",250)}
    <details class="jfree" ${has?"open":""}><summary><span class="ml">Free write</span></summary>${rte(`days/${dk}/jfree`,"anything else…",110)}</details>
    <div class="trio"><div><label class="f" style="margin-top:0">One win</label>${txt(`days/${dk}/win`)}</div><div><label class="f" style="margin-top:0">Grateful for</label>${txt(`days/${dk}/grat`)}</div><div><label class="f" style="margin-top:0">Tomorrow’s first step</label>${txt(`days/${dk}/tomorrow`,"the very first physical action")}</div></div>`,{cls:"s8 journal"});
@@ -171,7 +171,7 @@ function pToday(arg){
   const phChip=ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name}</span>`:"";
   const lineQ=typeof LINES!=="undefined"?LINES[Math.floor(parse(dk)/864e5)%LINES.length]:"";
   return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(bk(m.ph))}</span> ${phChip}`,nav)+customPanel()+calbertCard(dk,steps,S,nm,isToday,hr,dayN,ss)+
-   `<div class="line"><i class="ph ph-quotes"></i><span class="it">${esc(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${esc(m.line)}</span>`:""}</div>`+
+   `<div class="line"><i class="ph ph-quotes"></i><span class="cl">${calHtml(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${calHtml(m.line)}</span>`:""}</div>`+
    `<div class="board">${nowCard}${lightCard}${journalCard(dk,d)}${stk("s4",moodCard,waterCard,moveCard)}${ritCard}${mealsCard}${stk("s4",needleCard,cycleCard)}${museCard}${closeCard}${pinsCard}</div>`;
 }
 function monthDone(mk){let n=0;Object.keys(st.days).forEach(k=>{if(k.startsWith(mk)&&dayStats(k).done)n++});return n}
@@ -238,17 +238,17 @@ function pWeek(arg){
   const recapCard=card("wrecap","Last week’s plan","arrow-bend-up-left",`${ppl.length?`<ul class="l">${ppl.map(([x,l])=>`<li><b>${l}:</b> ${esc(gp(pw+"/"+x))}</li>`).join("")}</ul>`:`<p class="small muted">Nothing was planned during ${esc(rng(prev))}. Plan at the end of this week and it shows up here next time.</p>`}${gp(pw+"/slid")?`<div class="note" style="margin-top:10px"><b>What slid:</b> ${esc(gp(pw+"/slid"))}</div>`:""}`,{cls:"tint",r:esc(rng(prev))});
   const rhythmCard=card("wrhythm","The weekly rhythm","repeat",ul(["<b>Mon · Plan:</b> write next week’s three needle-movers.","<b>Tue–Thu · Build:</b> applications, driving, strength, calls.","<b>Fri · Review:</b> fill the review. What worked? What slid?","<b>Sat–Sun · Adventure + movie:</b> one small adventure, a reset hour."])+`<div class="note" style="margin-top:10px">Missed the review? Write “one win, one adjustment” and move on.</div>`);
   const reviewCard=card("wreview","Look back at this week","notebook",`<div class="fields2">
-   ${fld("Three wins","small counts. wins are evidence you can use on bad days.",[1,2,3].map(n=>txt(w+"/win"+n)).join('<div style="height:6px"></div>'))}
-   ${fld("What slid, and what was underneath it?","name the habit that dropped, then the real reason.",rte(w+"/slid","be specific and kind…",90))}
-   ${fld("What did my energy teach me?","which days drained me, and what was in them?",rte(w+"/energy","patterns, not verdicts…",90))}
-   ${fld("Shadow check","where did I act against what I say I want? not to punish.",rte(w+"/shadow","I said I wanted…, but I…",90))}
-   ${fld("Evidence of my ideal self","one outfit, meal, choice or sentence. collect it.",rte(w+"/ideal","my ideal self showed up when…",90))}</div>
+   ${fld("Three wins","Three. Small ones count, and I take a dim view of anyone who says they had none. Wins are evidence you can use on a bad day.",[1,2,3].map(n=>txt(w+"/win"+n)).join('<div style="height:6px"></div>'))}
+   ${fld("What slid, and what was underneath it?","Name the habit that dropped, then the real reason. The reason is nearly always smaller than the excuse.",rte(w+"/slid","be specific and kind…",90))}
+   ${fld("What did my energy teach me?","Which days drained you, and what was in them? Patterns, not verdicts. [He peers at the calendar.] Tuesdays, probably.",rte(w+"/energy","patterns, not verdicts…",90))}
+   ${fld("Shadow check","Where did you act against what you say you want? Not to punish anyone. I only want the pattern, and I’ll complain about the weather while you look.",rte(w+"/shadow","I said I wanted…, but I…",90))}
+   ${fld("Evidence of my ideal self","One outfit, meal, choice or sentence. Collect it and I’ll file it in the drawer.",rte(w+"/ideal","my ideal self showed up when…",90))}</div>
    <div class="row" style="margin-top:12px"><div><label class="f" style="margin-top:0">Strength sessions</label>${numIn(w+"/lifts","0")}</div><div><label class="f" style="margin-top:0">Applications</label>${numIn(w+"/apps","0")}</div><div><label class="f" style="margin-top:0">Driving minutes</label>${numIn(w+"/drive","0")}</div></div>`,{cls:"s6",r:esc(rng(days))});
   const planCard=card("wplan","Plan next week","compass",`<div class="fields2">
-   ${fld("One move each","the smallest action that still moves the needle. write it as a verb.",`<label class="f" style="margin-top:0">Weight</label>${txt(w+"/nw")}<label class="f">Car</label>${txt(w+"/nc")}<label class="f">Job</label>${txt(w+"/nj")}`)}
-   ${fld("One adjustment","if something slid, shrink it. do not add more.",txt(w+"/adj"))}
-   ${fld("Protect and drop","one thing to guard, one thing you’ll stop pretending you’ll do.",`${txt(w+"/protect","protect…")}<div style="height:6px"></div>${txt(w+"/drop","drop…")}`)}
-   ${fld("Pleasure on purpose","something to look forward to.",`${txt(w+"/movie","movie night pick")}<div style="height:6px"></div>${txt(w+"/adv","small adventure")}<div style="height:6px"></div>${txt(w+"/rw","reward for showing up")}`)}</div>`,{cls:"s6",r:esc(rng(next))});
+   ${fld("One move each","The smallest action that still counts. Write it as a verb, I can’t abide a noun with ambitions.",`<label class="f" style="margin-top:0">Weight</label>${txt(w+"/nw")}<label class="f">Car</label>${txt(w+"/nc")}<label class="f">Job</label>${txt(w+"/nj")}`)}
+   ${fld("One adjustment","If something slid, shrink it. Don’t add more, there’s no prize for a longer list.",txt(w+"/adj"))}
+   ${fld("Protect and drop","One thing to guard, and one thing you’ll stop pretending you’ll do. The Lady has noticed the second one.",`${txt(w+"/protect","protect…")}<div style="height:6px"></div>${txt(w+"/drop","drop…")}`)}
+   ${fld("Pleasure on purpose","Something to look forward to. I’m told this is allowed.",`${txt(w+"/movie","movie night pick")}<div style="height:6px"></div>${txt(w+"/adv","small adventure")}<div style="height:6px"></div>${txt(w+"/rw","reward for showing up")}`)}</div>`,{cls:"s6",r:esc(rng(next))});
   const nav=`<button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],-7)}">←</button><button class="btn sm" data-act="go" data-h="#week">This week</button><button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],7)}">→</button>`;
   return head("Week",`<span class="tag">${rel}</span>${esc(rng(days))}, ${parse(days[6]).getFullYear()}`,nav)+
    `<div class="wk">${strip}</div><div class="legend" style="margin:8px 0 14px"><span style="--lc:var(--acc)">dots: rituals · water · steps · food logged</span></div>`+
@@ -295,11 +295,11 @@ function pMonth(arg){
   if(rc||m){const r=rc||{fic:m.fic,non:m.non,film:m.film};bookCard=card("mbooks","Books · film · listen","books",`${[["book-open-text","Fiction",r.fic],["lightbulb","Nonfiction",r.non],["film-slate","Films",r.film],["headphones","Albums",r.listen]].filter(x=>x[2]).map(([i,k,v])=>`<div class="pick"><i class="ph ph-${i}"></i><div class="k">${k}</div><div class="v">${Array.isArray(v)?v.map(esc).join("<br>"):esc(v)}</div></div>`).join("")}${m?`<ul class="l" style="margin-top:8px">${m.rw.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="note" style="margin-top:10px"><b>If this month slides:</b> ${esc(m.slip)}</div>`:""}`,{cls:"s5"})}
   const p=`months/${id}`;
   const reflect=card("mreflect","Month reflection","notebook",`<div class="fields2">
-   ${fld("Intention for the month","one sentence. how do you want this month to feel?",txt(p+"/intent","this month I’m…"))}
-   ${fld("What did this month teach me?","what would you tell yourself on the 1st?",rte(p+"/taught","write it out…",100))}
-   ${fld("Shadow and growth","what pattern showed up again, and what was different?",rte(p+"/shadow","the pattern was…",100))}
-   ${fld("Carrying forward","what comes with you, and what do you leave here?",rte(p+"/forward","keep… / leave…",100))}</div>
-   ${fld("Notes","anything else.",area(p+"/note","What happened? What would make next month easier?",3))}`,{cls:"s8",r:esc(monthLabel(id))});
+   ${fld("Intention for the month","One sentence. How should this month feel? I’d like mine warmer, but nobody consults me.",txt(p+"/intent","this month I’m…"))}
+   ${fld("What did this month teach me?","What would you tell yourself on the first of the month? Say it plainly, without the apology.",rte(p+"/taught","write it out…",100))}
+   ${fld("Shadow and growth","Which pattern turned up again, and what was different this time? Different counts, however small.",rte(p+"/shadow","the pattern was…",100))}
+   ${fld("Carrying forward","What comes with you, and what stays here? Pack light. The packing is the worst of it, and I’ll be moaning about it regardless.",rte(p+"/forward","keep… / leave…",100))}</div>
+   ${fld("Notes","Anything else. The drawer has room.",area(p+"/note","What happened? What would make next month easier?",3))}`,{cls:"s8",r:esc(monthLabel(id))});
   const nav=`<button class="btn sm" data-act="go" data-h="#month/${addMonths(id,-1)}">←</button><button class="btn sm" data-act="go" data-h="#month">This month</button><button class="btn sm" data-act="go" data-h="#month/${addMonths(id,1)}">→</button>`;
   return head("Month",monthLabel(id)+(m?` · ${bk(m.ph)}`:""),nav)+
    `<div class="board">${topCard}${planCard}${calCard}${stk("s5",msCard,cycCard)}${statsCard}${wCard}${bookCard}${reflect}${stk("s4",evCard(id),detCard)}</div>`;
