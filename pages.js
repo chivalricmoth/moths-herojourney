@@ -27,7 +27,7 @@ const CAL_CLOSE=["Sealed. It’s in the drawer with the others.","Day closed. I�
 const CAL_HARD="Read it. It’s gone in the drawer with the others. You write a decent sentence when you’re miserable, and I’d keep quiet about that, it gives people ideas. Now go and drink something warm, you’ve earned it. I’d join you, but I haven’t got a mouth. Eight hundred years and I’ve never had so much as a cuppa, can you even imagine? Hmph.";
 const CAL_MISS=["Missed a couple days, huh? I had a bet on with the hedgehog downstairs, and I lost, so you owe me a tin of sardines. [He grumbles something unintelligible for a moment, before fluttering back up close to your nose] The Lady requires an offering as a show of good faith. That is, if you’re still determined to prove yourself worthy of what you crave. Pick one small thing, get it done. Tidying up, brushing your teeth, doesn’t matter what. Just get it over with already and don’t mope around, yea? I’m old, and I’ve watched worse come back from further.","Two days gone. The road’s still there, the work’s still there, and so am I, regrettably. [He taps the lampshade twice.] The Lady requires an offering, and she isn’t fussy about the size. Pick one small thing and do it.","The list has been sitting by the door like a dog. Let it out. One thing, any thing."];
 const CAL_TAIL=["[He mutters something about the LED bulb.]","What’s wrong with incandescents? Whatever.","I’ve been up since three. Don’t ask.","The hedgehog downstairs has money on you. Don’t let him win.","[He settles on the lampshade and pretends not to watch.]","The Lady has been informed of your plans. She’s unbothered."];
-const mothSvg=()=>`<svg class="moth" viewBox="0 0 64 64" aria-hidden="true"><g fill="#a8e0c8" stroke="#6fb59b" stroke-width="1"><path d="M32 28C22 14 8 12 4 20c-2 10 14 16 27 14z"/><path d="M32 28c10-14 24-16 28-8 2 10-14 16-27 14z"/><path d="M31 34c-9 4-13 14-21 26 10-4 18-12 22-20z"/><path d="M33 34c9 4 13 14 21 26-10-4-18-12-22-20z"/></g><circle cx="14" cy="22" r="2.6" fill="none" stroke="#7a5a9a"/><circle cx="50" cy="22" r="2.6" fill="none" stroke="#7a5a9a"/><ellipse cx="32" cy="31" rx="2.6" ry="10" fill="#e8efe9"/><path d="M30 22l-4-10M34 22l4-10" stroke="#6fb59b" fill="none"/></svg>`;
+const mothSvg=()=>`<img src="calbert.png" alt="" width="64" height="64" decoding="async">`;
 const calHtml=t=>esc(t).replace(/\[([^\]]+)\]/g,'<i class="stage">[$1]</i>');
 const starred=k=>{const d=st.days[k];if(!d)return false;try{const S=dayStats(k);return !!(S.done||S.rit>=3)}catch(e){return !!d.done}};
 function starKeys(){const o={};Object.keys(st.days).forEach(k=>{if(DATE_RE.test(k)&&starred(k))o[k]=1});const ev=(st.notes&&st.notes.stars)||{};Object.keys(ev).forEach(k=>{if(DATE_RE.test(k))o[k]=1});return o}
@@ -81,7 +81,7 @@ async function setAvatar(file){
 function afterImagesPulled(){hydrateImgs(document)}
 
 /* ---------- the one card builder: id, title, icon, body ---------- */
-const MUP=["today","week"],WS=[1,2,3,4,6],DWM={3:2,4:2,5:3,6:3,7:4,8:4,9:4,12:6}; /* part 2 adds "month" */
+const MUP=["today","week, month"],WS=[1,2,3,4,6],DWM={3:2,4:2,5:3,6:3,7:4,8:4,9:4,12:6}; 
 const folded=id=>!!(LS.fold&&LS.fold[id]);
 const LAY=pg=>{const l=(st.notes||{}).layout,p=l&&l[pg];return p&&typeof p==="object"?p:{o:[],w:{}}};
 function mu(pg,arr){
