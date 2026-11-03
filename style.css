@@ -730,3 +730,26 @@ html.focus .line,html.focus .calbert{display:none}
   #prn .ph{break-inside:avoid}
   .mi,.card{break-inside:avoid}
 }
+
+
+.nowc{background:linear-gradient(135deg,var(--a2),var(--a1)),var(--surf);border-color:var(--a3)}
+.nowc .cb{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.nowc .nc{flex:1 1 220px;min-width:0}.nowc .t{font:800 1.3rem/1.2 var(--sans);letter-spacing:-.01em;margin:3px 0}.nowc .nbtn{margin-top:10px}
+.ring.xl b{display:flex;flex-direction:column;justify-content:center;align-items:center}
+.pinc .cb:has(.pinfull){margin:-14px -16px -16px;line-height:0}
+.pinfull{position:relative;display:block;background:var(--surf2)}
+.pinfull img{display:block;width:100%;height:auto;min-height:140px;object-fit:cover;border-radius:0 0 3px 3px}
+.pinfull .cap{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;font:italic 500 1.05rem/1.2 var(--serif);text-transform:lowercase;color:#fff;background:linear-gradient(transparent,hsl(0 0% 0%/.75))}
+.pinfull .pbtn{position:absolute;top:8px;right:8px;display:flex;gap:5px}
+.pinfull .pbtn button{width:30px;height:30px;border-radius:50%;border:0;background:hsl(0 0% 0%/.6);color:#fff;display:grid;place-items:center}
+.pinfull .pcount{position:absolute;top:12px;left:12px;font:400 .66rem var(--mono);color:#fff;font-style:normal;text-shadow:0 0 6px #000}
+.pinfull .perr{display:none;padding:22px;line-height:1.4;font-size:.8rem;color:var(--t75)}
+.pinfull.bad img{display:none}.pinfull.bad .perr{display:block}
+
+.rstep>.no{font:italic 300 1.7rem/1 var(--serif)}
+.mmood{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.rt-view{margin:8px 0;font-size:.95rem;line-height:1.6;overflow-wrap:anywhere}
+.rt-view b{display:block;font:800 .58rem var(--sans);letter-spacing:.2em;text-transform:uppercase}
+.vempty{padding:46px 20px;text-align:center;border:1.5px dashed var(--t30);border-radius:4px;font:italic 500 1.3rem/1.3 var(--serif);color:var(--accT)}
+@media(max-width:560px){.mood{column-width:140px}}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
