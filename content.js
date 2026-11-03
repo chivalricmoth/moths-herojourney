@@ -10,14 +10,14 @@ const JBLOCKS=[
 ];
 const PROMPTS={
  anchor:[
-  ["Walk through your north star morning: the light, the sheets, the sound. Which 10% of it did you live today? What one small thing would make tomorrow’s morning 11%?","Rehearsing the scene teaches your nervous system it’s safe to become her."],
-  ["What did you wear, eat, read or listen to today that felt like her? What was the old default?","Identity changes through repeated small proofs, not one big leap."],
+  ["Walk through your north star morning: the light, the sheets, the sound. Which 10% of it did you live today? What one small thing would make tomorrow’s morning 11%?","Rehearsing the scene teaches your nervous system it’s safe to become that person."],
+  ["What did you wear, eat, read or listen to today that felt like your ideal self? What was the old default?","Identity changes through repeated small proofs, not one big leap."],
   ["Pick a muse (Joan, Tartt, Bourdain, Villanelle, Alexa, Bowie…). What would they have done with your hardest hour today? What’s the smallest version you can do?","Borrowing a posture is easier than inventing a personality."],
   ["Finish the sentence “At my core, I am a person who…” using only evidence from today.","Evidence beats affirmations. Even tiny proof counts."],
   ["Your currency isn’t only money: creative output, novelty, laughs, reading and making time, rest, calm, safety. Which did you earn today? Which are overdrawn?","Measure the wealth you actually want."],
   ["Describe tomorrow’s workspace as your north star self sees it: what’s on the desk, what’s gone, what’s in the cup? What can you set up tonight?","Environment does the remembering for you."],
   ["Where did you widen the surface area of your life today so luck could find you?","A message, a new street, a ‘yes’ you almost skipped."],
-  ["Body check as 2030-you: how did your body feel today, and how does she feel? What was one kindness you did for it?","Light, lean, loose is a feeling before it’s a number."],
+  ["Body check as 2030-you: how did your body feel today, and how does it feel? What was one kindness you did for it?","Light, lean, loose is a feeling before it’s a number."],
   ["Aesthetic audit: one detail you added or want to add (kohl, velvet, a candle, a pomegranate, a rug, a scent). Where does it live?","Little rituals make a life feel authored."],
   ["What would dependable, kind, diligent look like in one thing you did today?","Your standard is character, not perfection."],
   ["Write a ‘no worries, I have a backup plan’ sentence for something that could go wrong tomorrow, then write the plan.","Thinking ahead is how you stay calm."],
@@ -85,7 +85,7 @@ const FEELINGS=["calm","hopeful","proud","loved","energised","inspired","anxious
 
 /* original lines, in the voice of the muses */
 const LINES=[
- "dress like the person you’re about to become. she’s watching.",
+ "dress like the person you’re about to become. your future self is watching.",
  "a candle day is still a day. light it anyway.",
  "be unembarrassed, be early, be a little bit feral.",
  "you are not behind. you are mid-transformation.",
@@ -104,7 +104,7 @@ const LINES=[
  "the underground is just people who kept showing up in the dark.",
  "taste is a muscle. feed it good books and bad decisions in moderation.",
  "no one is coming to save the schedule. you are the schedule.",
- "borrow one muse a day. return her better.",
+ "borrow one muse a day. return them better.",
  "tired is information. quitting is a decision. rest is neither.",
  "dirtbag optimism: broke, curious, unembarrassed.",
  "solidarity starts at breakfast. eat, rest, then fight.",
