@@ -25,7 +25,7 @@ pWeek=function(arg){
    ${fld("What slid, and what was underneath it?","name the habit that dropped, then the real reason: tired, scared, bored, overbooked?",rte(w+"/slid","be specific and kind…",90))}
    ${fld("What did my energy teach me?","look at the mood and energy rows above. which days drained me, and what was in them?",rte(w+"/energy","patterns, not verdicts…",90))}
    ${fld("Shadow check: where did I act against what I say I want?","not to punish. the gap shows what the old pattern is protecting.",rte(w+"/shadow","I said I wanted…, but I…",90))}
-   ${fld("Evidence of my ideal self","one outfit, meal, choice, room or sentence that felt like her. collect it.",rte(w+"/ideal","she showed up when…",90))}
+   ${fld("Evidence of my ideal self","one outfit, meal, choice, room or sentence that felt like your ideal self. collect it.",rte(w+"/ideal","my ideal self showed up when…",90))}
    <div class="row"><div><label class="f">Strength sessions</label>${numIn(w+"/lifts","0")}</div><div><label class="f">Applications</label>${numIn(w+"/apps","0")}</div><div><label class="f">Driving minutes</label>${numIn(w+"/drive","0")}</div></div></div>`;
   const plan=`<div class="card"><h3><i class="ph ph-compass"></i>Plan next week<span class="r">${esc(rng(next))}</span></h3>
    ${fld("One move each","the smallest action that still moves the needle. write it as a verb.",`<label class="f" style="margin-top:0">Weight</label>${txt(w+"/nw")}<label class="f">Car</label>${txt(w+"/nc")}<label class="f">Job</label>${txt(w+"/nj")}`)}
@@ -43,6 +43,8 @@ pMonth=function(arg){
   const done=keys.filter(k=>dayStats(k).done).length,logged=keys.filter(k=>dayStats(k).has).length,left=keys.filter(k=>k>=todayKey()).length;
   const top=`<div class="card nowcard"><div><div class="k">${esc(monthLabel(id))}</div><div class="t">${m?esc(m.ph):"This month"}</div><div class="muted small">${done} days showed up · ${logged} logged${left&&left<nDays?` · ${left} days left`:""}</div></div><div class="ring" style="--p:${Math.round(done/nDays*100)}"><b>${Math.round(done/nDays*100)}%</b></div></div>`;
   const cal=cardBy(doc,"Calendar");if(cal)cal.insertAdjacentElement("beforebegin",mk(doc,top));
+  const rc=typeof RECS!=="undefined"&&RECS[id],bk=cardBy(doc,"Books");
+  if(bk&&(rc||m)){const r=rc||{fic:m.fic,non:m.non,film:m.film};bk.replaceWith(mk(doc,`<div class="card"><h3><i class="ph ph-books"></i>Books · film · listen</h3>${[["book-open-text","Fiction",r.fic],["lightbulb","Nonfiction",r.non],["film-slate","Film",r.film],["headphones","Listen",r.listen]].filter(x=>x[2]).map(([i,k,v])=>`<div class="pick"><i class="ph ph-${i}"></i><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join("")}${r.why?`<p class="small muted" style="margin-top:8px"><span class="it" style="font-size:1.05rem">${esc(r.why)}</span></p>`:""}${m?`<ul class="l" style="margin-top:8px">${m.rw.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="note" style="margin-top:10px"><b>If this month slides:</b> ${esc(m.slip)}</div>`:""}</div>`))}
   const notes=cardBy(doc,"Notes for");
   if(notes){const p=`months/${id}`;notes.replaceWith(mk(doc,`<div class="card"><h3><i class="ph ph-notebook"></i>Month reflection<span class="r">${esc(monthLabel(id))}</span></h3>
    ${fld("Intention for the month","one sentence. how do you want this month to feel?",txt(p+"/intent","this month I’m…"))}
