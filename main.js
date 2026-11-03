@@ -21,7 +21,6 @@ function chrome(){
     <button data-act="toggleTheme" class="themeBtn-w" title="Light / dark"><span class="themeBtn"></span><span class="lb">Light / dark</span></button></div>
    <div class="rfoot">
     <div class="syncline"><span class="syncdot"></span><span class="lb syncstat"></span></div>
-    <a class="rnavlink" href="#settings"></a>
     <button data-act="pin" title="Pin sidebar">${ico(pinned()?"push-pin-slash":"push-pin")}<span class="lb">${pinned()?"Unpin":"Pin open"}</span></button>
     <div class="rnav"><a href="#settings" class="${r.name==="settings"?"on":""}">${ico("gear-six",r.name==="settings")}<span class="lb">Settings</span></a></div>
    </div></nav>`;
