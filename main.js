@@ -2,24 +2,43 @@
 /* ============================================================
    north star — shell, events, boot
    ============================================================ */
-const NAVS=[["today","Today","✦"],["week","Week","▥"],["month","Month","▦"],["archive","Archive","❏"],["plan","Plan","◈"]];
+const NAVS=[["today","Today","sun-horizon"],["week","Week","calendar-dots"],["month","Month","calendar-blank"],["vision","Vision","images-square"],["archive","Archive","archive"],["plan","Plan","compass"]];
+const TABS=["today","week","month","vision","plan"];
 const curDay=()=>{const r=R();return r.name==="today"&&DATE_RE.test(r.arg)?r.arg:todayKey()};
 const $=id=>document.getElementById(id);
+const ico=(n,f)=>`<i class="ph${f?"-fill":""} ph-${n}"></i>`;
+const pinned=()=>!!LS.pinned;
 
 function chrome(){
-  const r=R(),nm=(st.settings.name||"").trim();
-  const links=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}"><span class="ic">${ic}</span>${l}</a>`).join("")+`<a href="#settings" class="${r.name==="settings"?"on":""}"><span class="ic">⚙</span>Settings</a>`;
-  $("side").innerHTML=`<div class="brand"><span class="mark">north star</span><small>2027 → 2030</small></div>
-   <a class="me" href="#settings">${avatarHtml()}<div><b>${esc(nm||"You")}</b><span class="sub">${esc(monthNear(todayKey()).ph)} · ${esc(monthNear(todayKey()).lbl)}</span></div></a>
-   <nav class="snav" aria-label="sections">${links}</nav>
-   <div class="side-foot"><div class="inl" style="justify-content:space-between"><span class="small muted"><span class="syncdot"></span><span class="syncstat"></span></span><span class="inl"><button class="ib" data-act="cycleHouse" title="Change accent colour" aria-label="Change accent colour"><span class="dot"></span></button><button class="ib themeBtn" data-act="toggleTheme" title="Light / dark" aria-label="Toggle light or dark"></button></span></div><div class="mini">“a candle day is still a day I showed up.”</div></div>`;
-  $("topbar").innerHTML=`<div class="brand"><span class="mark">north star</span></div><div class="tools"><span class="small muted"><span class="syncdot"></span></span><button class="ib" data-act="cycleHouse" aria-label="Change accent colour"><span class="dot"></span></button><button class="ib themeBtn" data-act="toggleTheme" aria-label="Toggle light or dark"></button><a href="#settings" aria-label="Settings and profile">${avatarHtml()}</a></div>`;
-  $("tabs").innerHTML=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}"><span class="ic">${ic}</span>${l}</a>`).join("");
+  const r=R(),nm=(st.settings.name||"").trim(),mo=monthNear(todayKey());
+  document.documentElement.classList.toggle("pinned",pinned());
+  const nav=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}" title="${l}">${ico(ic,r.name===k)}<span class="lb">${l}</span></a>`).join("");
+  $("side").innerHTML=`<nav class="rail" aria-label="sections">
+   <div class="rhead"><a class="av" href="#settings" title="Settings">${avatarHtml()}</a><div class="who lb"><a class="wordmark" href="#today" style="font-size:1.5rem">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div></div>
+   <div class="rnav">${nav}</div><div class="rsep"></div>
+   <div class="rq">
+    <button data-act="cycleHouse" title="Accent colour"><span class="dot"></span><span class="lb">Accent</span></button>
+    <button data-act="toggleTheme" class="themeBtn-w" title="Light / dark"><span class="themeBtn"></span><span class="lb">Light / dark</span></button></div>
+   <div class="rfoot">
+    <div class="syncline"><span class="syncdot"></span><span class="lb syncstat"></span></div>
+    <a class="rnavlink" href="#settings"></a>
+    <button data-act="pin" title="Pin sidebar">${ico(pinned()?"push-pin-slash":"push-pin")}<span class="lb">${pinned()?"Unpin":"Pin open"}</span></button>
+    <div class="rnav"><a href="#settings" class="${r.name==="settings"?"on":""}">${ico("gear-six",r.name==="settings")}<span class="lb">Settings</span></a></div>
+   </div></nav>`;
+  $("topbar").innerHTML=`<a class="wordmark" href="#today">north star</a><div class="tools"><span class="syncdot"></span><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
+  $("tabs").innerHTML=NAVS.filter(n=>TABS.includes(n[0])).map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
+}
+function pVision(){
+  const u=(st.settings.pinBoard||"").trim();
+  return head("Vision","your board, always one tap away")+`<div class="card"><h3>${ico("push-pin")}Pinterest board<span class="r">paste link</span></h3>
+   <div class="inl"><input type="url" id="pinUrl" placeholder="https://pinterest.com/you/your-board/" value="${esc(u)}"><button class="btn solid" data-act="savePin">Save</button></div>
+   <p class="small muted" style="margin-top:8px">Pinterest blocks scraping, so the board is embedded live instead.</p></div>
+   <div class="pinframe" style="margin-top:14px"><div class="pf-h">${ico("push-pin")}board</div><div class="pf-b">${u?`<a data-pin-do="embedBoard" data-pin-board-width="900" data-pin-scale-height="700" data-pin-scale-width="115" href="${esc(u)}"></a>`:`<p class="muted">no board yet. paste a link above.</p>`}</div></div>`;
 }
 function render(){
   const y=window.scrollY,r=R();
   chrome();applyLook();
-  const fn={today:pToday,week:pWeek,month:pMonth,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
+  const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
   $("main").innerHTML=fn(r.arg);
   setSyncState(syncing?"busy":syncMsg?"err":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
@@ -80,6 +99,8 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act,i=+b.dataset.i,dk=curDay(),D=b.dataset;
   switch(a){
+   case"pin":LS.pinned=!LS.pinned;persistLocal();render();break;
+   case"savePin":sp("settings/pinBoard",$("pinUrl").value.trim());save();render();if(!document.getElementById("pinjs")){const s=document.createElement("script");s.id="pinjs";s.async=true;s.src="https://assets.pinterest.com/js/pinit.js";document.body.appendChild(s)}else if(window.PinUtils)PinUtils.build();break;
    case"go":location.hash=D.h;break;
    case"tick":sp(`days/${dk}/rit/${D.id}`,true);save();render();break;
    case"goto":{const el=$(D.t);if(el){el.scrollIntoView({behavior:"smooth",block:"center"});const f=el.querySelector("input,textarea");if(f)setTimeout(()=>f.focus({preventScroll:true}),350)}break}
