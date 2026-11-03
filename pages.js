@@ -18,6 +18,56 @@ const chip=(t,on)=>`<span class="chip ${on?"on":""}">${t}</span>`;
 const kpi=(t,v,sub)=>`<div class="kpi"><div class="k">${t}</div><div class="stat num">${v}</div><div class="small muted">${sub}</div></div>`;
 const stk=(cls,...h)=>{const s=h.join("");return s?`<div class="stack ${cls}">${s}</div>`:""};
 
+/* ---------- Calbert: pools, stars and the Run ---------- */
+const CAL_RUNS=[3,7,14,30,60,100,200,365],CAL_STARS=[10,25,50,100,250,500,1000];
+const CAL_RUN={3:"Three in a row. Don’t get ideas. [He does a small lap of the lampshade.]",7:"Seven days. In my day that got you a goat. I haven’t got a goat. There’s a star by your name instead, and it’s glued on, so don’t pick at it.",14:"A fortnight. The hedgehog owes me sardines and I’m over the moon about it.",30:"Thirty days. I’ve started leaving the lamp on for you. Don’t tell the Lady about the electricity.",60:"Sixty. I’ve stopped keeping count, which means I’ve been keeping count.",100:"A hundred days. In my day that got you a village and a sheep. I’ve got neither. [He flutters in a tight circle, then pretends he didn’t.]",200:"Two hundred. I’d need a bigger jar to be dissolved in. Hmph.",365:"A full year. The Lady has been informed, and she asked me to say nothing. I’ve said it anyway."};
+const CAL_STAR={10:"Ten stars. They’re glued on. Stop checking.",25:"Twenty-five. The drawer’s getting heavy.",50:"Fifty stars. I ran out of glue at forty and used jam.",100:"A hundred stars. I told the hedgehog and he wanted odds.",250:"Two hundred and fifty. I’d bet a tin of sardines you couldn’t count that high. You can. Hmph.",500:"Five hundred stars. The lampshade is getting crowded.",1000:"A thousand stars. I’m not crying, it’s the LED bulb."};
+const CAL_BACK=["You’re back. I’ll say nothing about it, loudly.","Back again. The Lady has been informed, and she wasn’t surprised. She’s never surprised, it’s tiresome.","There you are. The road’s where you left it. Sit down, I’ll watch."];
+const CAL_CLOSE=["Sealed. It’s in the drawer with the others.","Day closed. I’ll tell the Lady, and she’ll pretend not to be pleased.","That’s the day done. Go and put the kettle on, I’ll supervise.","Closed. The hedgehog just lost a bet, and I couldn’t be happier about it.","Done for today. Even the LED bulb looks impressed. Hmph.","Closed, and you did it without making a speech. I approve."];
+const CAL_HARD="Read it. It’s gone in the drawer with the others. You write a decent sentence when you’re miserable, and I’d keep quiet about that, it gives people ideas. Now go and drink something warm, you’ve earned it. I’d join you, but I haven’t got a mouth. Eight hundred years and I’ve never had so much as a cuppa, can you even imagine? Hmph.";
+const CAL_MISS=["Missed a couple days, huh? I had a bet on with the hedgehog downstairs, and I lost, so you owe me a tin of sardines. [He grumbles something unintelligible for a moment, before fluttering back up close to your nose] The Lady requires an offering as a show of good faith. That is, if you’re still determined to prove yourself worthy of what you crave. Pick one small thing, get it done. Tidying up, brushing your teeth, doesn’t matter what. Just get it over with already and don’t mope around, yea? I’m old, and I’ve watched worse come back from further.","Two days gone. The road’s still there, the work’s still there, and so am I, regrettably. [He taps the lampshade twice.] The Lady requires an offering, and she isn’t fussy about the size. Pick one small thing and do it.","The list has been sitting by the door like a dog. Let it out. One thing, any thing."];
+const CAL_TAIL=["[He mutters something about the LED bulb.]","What’s wrong with incandescents? Whatever.","I’ve been up since three. Don’t ask.","The hedgehog downstairs has money on you. Don’t let him win.","[He settles on the lampshade and pretends not to watch.]","The Lady has been informed of your plans. She’s unbothered."];
+const mothSvg=()=>`<svg class="moth" viewBox="0 0 64 64" aria-hidden="true"><g fill="#a8e0c8" stroke="#6fb59b" stroke-width="1"><path d="M32 28C22 14 8 12 4 20c-2 10 14 16 27 14z"/><path d="M32 28c10-14 24-16 28-8 2 10-14 16-27 14z"/><path d="M31 34c-9 4-13 14-21 26 10-4 18-12 22-20z"/><path d="M33 34c9 4 13 14 21 26-10-4-18-12-22-20z"/></g><circle cx="14" cy="22" r="2.6" fill="none" stroke="#7a5a9a"/><circle cx="50" cy="22" r="2.6" fill="none" stroke="#7a5a9a"/><ellipse cx="32" cy="31" rx="2.6" ry="10" fill="#e8efe9"/><path d="M30 22l-4-10M34 22l4-10" stroke="#6fb59b" fill="none"/></svg>`;
+const calHtml=t=>esc(t).replace(/\[([^\]]+)\]/g,'<i class="stage">[$1]</i>');
+const starred=k=>{const d=st.days[k];if(!d)return false;try{const S=dayStats(k);return !!(S.done||S.rit>=3)}catch(e){return !!d.done}};
+function starKeys(){const o={};Object.keys(st.days).forEach(k=>{if(DATE_RE.test(k)&&starred(k))o[k]=1});const ev=(st.notes&&st.notes.stars)||{};Object.keys(ev).forEach(k=>{if(DATE_RE.test(k))o[k]=1});return o}
+function starStats(){
+  const set=starKeys(),ks=Object.keys(set).sort(),today=todayKey();let best=0;
+  if(ks.length){let r=0,m=0;for(let k=ks[0];k<=today;k=addDays(k,1)){if(set[k]){r++;m=0;if(r>best)best=r}else{m++;if(m>=2){r=0;m=0}}}}
+  let run=0,miss=0,k=set[today]?today:addDays(today,-1);
+  for(let i=0;i<4000;i++){if(set[k]){run++;miss=0}else{miss++;if(miss>=2)break}k=addDays(k,-1)}
+  return{stars:ks.length,best,run}
+}
+function celebrate(dk,closed){
+  if(!starred(dk))return;
+  const had=gp(`notes/stars/${dk}`);let gap=0;
+  if(!had){const prev=Object.keys(starKeys()).filter(k=>k<dk).sort().pop();gap=prev?daysBetween(prev,dk)-1:0;sp(`notes/stars/${dk}`,1);save()}
+  const s=starStats();LS.cel=LS.cel||{};let msg=null;
+  if(!had){
+    if(CAL_RUNS.includes(s.run)&&!LS.cel["r"+s.run]){LS.cel["r"+s.run]=1;msg=CAL_RUN[s.run]}
+    else if(CAL_STARS.includes(s.stars)&&!LS.cel["s"+s.stars]){LS.cel["s"+s.stars]=1;msg=CAL_STAR[s.stars]}
+    else if(gap>=2)msg=CAL_BACK[s.stars%CAL_BACK.length];
+  }
+  if(!msg&&closed){const mo=+gp(`days/${dk}/mood`)||0;msg=(mo>0&&mo<=2)?"Read it. It’s in the drawer. Go and drink something warm, you’ve earned it.":CAL_CLOSE[s.stars%CAL_CLOSE.length]}
+  if(msg){persistLocal();toast(msg)}
+}
+function calbertCard(dk,steps,S,nm,isToday,hr,dayN,ss){
+  const d=st.days[dk]||{},who=nm||"Morning Star";let t="";
+  if(d.done)t=(S.mood>0&&S.mood<=2)?CAL_HARD:CAL_CLOSE[dayN%CAL_CLOSE.length];
+  else if(isToday){
+    const y=addDays(todayKey(),-1),y2=addDays(todayKey(),-2);
+    if(ss.stars>0&&!starred(todayKey())&&!starred(y)&&!starred(y2))t=CAL_MISS[dayN%CAL_MISS.length];
+    else{
+      const top=steps.filter(x=>!x.done&&x.k!=="close").slice(0,3).map(x=>x.t.charAt(0).toLowerCase()+x.t.slice(1)),n=top.length;
+      const part=hr<12?"Morning":hr<18?"Afternoon":"Evening",tail=CAL_TAIL[dayN%CAL_TAIL.length];
+      const list=n>1?top.slice(0,-1).join(", ")+" and "+top[n-1]:top[0];
+      t=n?`${part}, ${who}. You’ve ${["","one job","two jobs","three jobs"][n]} on the list: ${list}. Do ${top[0]} first, it’s the one that’s been loitering. ${tail}`:`${part}, ${who}. Nothing left on the list. Go and drink something warm, I’ll sit here and not mind.`;
+    }
+  }
+  return t?`<section class="calbert"><span class="mothw">${mothSvg()}</span><div><div class="nm">Calbert</div><p>${calHtml(t)}</p></div></section>`:"";
+}
+const bk=ph=>ph==="Runway"?"The Thaw (Prologue)":"Book I · "+ph;
+
 /* ---------- avatar (image store keeps transparency) ---------- */
 function avatarHtml(cls=""){
   const id=st.settings.avatarId,a=st.settings.avatar,n=(st.settings.name||"").trim();
@@ -41,7 +91,7 @@ const fld=(lbl,why,body)=>`<div class="rv"><div class="qq">${lbl}</div><div clas
 const rng=d=>`${md(d[0])} – ${md(d[6])}`;
 
 /* ---------- Today customisation ---------- */
-const TODAY_CARDS=[["journal","Journal"],["mood","Check-in"],["water","Water"],["move","Move & sleep"],["rituals","Rituals"],["meals","Meals"],["needle","Needle-movers"],["cycle","Cycle"],["light","Pick your light"],["muse","Muse"],["close","Close the day"],["pins","Pinned images"]];
+const TODAY_CARDS=[["journal","Journal"],["mood","Check-in"],["water","Water"],["move","Move & sleep"],["rituals","Rituals"],["meals","Meals"],["needle","Errands for the Lady"],["cycle","Cycle"],["light","Choose your familiar"],["muse","Muse"],["close","Close the day"],["pins","Pinned images"]];
 const denseSeg=()=>`<div class="seg">${[["cozy","Cozy"],["compact","Compact"]].map(([v,l])=>`<button class="${(LS.dense||"cozy")===v?"on":""}" data-act="dense" data-v="${v}">${l}</button>`).join("")}</div>`;
 const customPanel=()=>!customOpen?"":`<div class="card custom"><h3><i class="ph ph-sliders-horizontal"></i>Customize Today<span class="r">saved on this device</span></h3><p class="small muted" style="margin-bottom:8px">Tap a card to show or hide it. Every card also has a collapse arrow.</p><div class="chips">${TODAY_CARDS.map(([k,l])=>`<button class="chip ${hid(k)?"":"on"}" data-act="toggleCard" data-id="${k}">${l}</button>`).join("")}</div><div class="row" style="margin-top:12px;align-items:center">${denseSeg()}<button class="btn sm ghost" data-act="resetLayout">Reset layout</button></div></div>`;
 const layoutCard=()=>`<div class="card"><h3><i class="ph ph-sliders-horizontal"></i>Layout</h3><label class="f" style="margin-top:0">Density</label>${denseSeg()}<p class="small muted" style="margin-top:8px">Show or hide cards on Today with the Customize button there. Collapse any card with its arrow. Saved on this device.</p><button class="btn sm" data-act="resetLayout" style="margin-top:8px">Reset layout</button></div>`;
@@ -65,7 +115,7 @@ function pToday(arg){
   const tier=d.tier||"lantern",ti=Math.max(0,TIERS.findIndex(t=>t[0]===tier));
   const dayN=Math.floor((parse(dk)-new Date(parse(dk).getFullYear(),0,0))/864e5);
   const mantra=MANTRAS[dayN%MANTRAS.length];
-  const rits=RIT.filter(r=>r.t<=ti);
+  const rits=RIT.filter(r=>r.t<=ti),ss=starStats();
   const wg=+st.settings.waterGoal||8,sg=stepGoalFor(dk),calG=+st.settings.calGoal||0;
   const ci=cycleInfo(dk),muse=MUSES[(st.notes.muse||0)%MUSES.length];
   const hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",nm=(st.settings.name||"").trim();
@@ -75,18 +125,18 @@ function pToday(arg){
   if(ti>=1)steps.push({k:"go",t:"Log what you ate",s:"Awareness, not judgment.",done:S.mealsLogged,to:"meals"});
   steps.push({k:"go",t:"Check in: energy and mood",s:"Two taps.",done:!!(S.mood&&S.energy),to:"mood"});
   if(ti>=1){steps.push({k:"go",t:"Write one win",s:"Small counts.",done:!!d.win,to:"journal"});steps.push({k:"go",t:"Name tomorrow’s first step",s:"The very first physical action.",done:!!d.tomorrow,to:"journal"})}
-  steps.push({k:"close",t:"Close the day",s:"You showed up. That’s the whole job.",done:!!d.done});
+  steps.push({k:"close",t:"Close the day",s:"Seal it and I’ll put it in the drawer.",done:!!d.done});
   const next=steps.find(x=>!x.done),doneN=steps.filter(x=>x.done).length,pct=Math.round(doneN/steps.length*100);
   const nowBtn=!next?"":next.k==="rit"?`<button class="btn solid" data-act="tick" data-id="${next.id}">Done ✓</button>`:next.k==="close"?`<button class="btn solid" data-act="markDone">Close the day</button>`:`<button class="btn solid" data-act="goto" data-t="${next.to}">Go →</button>`;
   const g=(t,ic,txt)=>`<button data-act="goto" data-t="${t}"><i class="ph ph-${ic}"></i>${txt}</button>`;
-  const glance=`<div class="glance">${g("water","drop",`${S.water}/${wg}`)}${g("move","footprints",S.steps.toLocaleString())}${g("mood","smiley",MOODS[S.mood]||"mood?")}${g("meals","fork-knife",S.kcal?S.kcal.toLocaleString()+" kcal":"meals")}${g("journal","notebook",d.win||d.jfree||gp(`days/${dk}/j_${jtab}`)?"written":"write")}</div>`;
-  const nowCard=`<section class="card nowcard s8" id="now"><div class="nc"><div class="k">${next?"Next up":"All done"}</div><div class="t">${next?esc(next.t):"Rest well. You showed up today."}</div><div class="muted small">${next?esc(next.s):esc(mantra)}</div><div class="nbtn">${nowBtn}</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div>${glance}</section>`;
+  const glance=`<div class="glance">${g("water","drop",`${S.water}/${wg}`)}${g("move","footprints",S.steps.toLocaleString())}${g("mood","smiley",MOODS[S.mood]||"mood?")}${g("meals","fork-knife",S.kcal?S.kcal.toLocaleString()+" kcal":"meals")}${g("journal","notebook",d.win||d.jfree||gp(`days/${dk}/j_${jtab}`)?"written":"write")}${g("close","star-four",ss.stars+" stars"+(ss.run>1?" · run "+ss.run:""))}</div>`;
+  const nowCard=`<section class="card nowcard s8" id="now"><div class="nc"><div class="k">${next?"Next up":"All done"}</div><div class="t">${next?esc(next.t):"That’s the lot. Go and drink something warm."}</div><div class="muted small">${next?esc(next.s):esc(mantra)}</div><div class="nbtn">${nowBtn}</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div>${glance}</section>`;
 
-  const lightCard=card("light","Pick your light","lightbulb",`<div class="light">${TIERS.map(t=>`<label><input type="radio" name="tier" ${B(`days/${dk}/tier`)} value="${t[0]}" data-re="1" ${tier===t[0]?"checked":""}>${t[1]}</label>`).join("")}</div><div class="tierhint">${esc(TIERS[ti][2])}</div><p class="mantra it">${esc(mantra)}</p>`,{cls:"s4"});
+  const lightCard=card("light","Choose your familiar","butterfly",`<div class="light">${TIERS.map(t=>`<label><input type="radio" name="tier" ${B(`days/${dk}/tier`)} value="${t[0]}" data-re="1" ${tier===t[0]?"checked":""}>${t[1]}</label>`).join("")}</div><div class="tierhint">${esc(TIERS[ti][2])}</div><p class="mantra it">${esc(mantra)}</p>`,{cls:"s4"});
 
-  const ritCard=card("rituals","Rituals","flame",`${GROUPS.map(g=>{const rs=rits.filter(r=>r.g===g[0]);if(!rs.length)return"";const n=rs.filter(r=>gp(`days/${dk}/rit/${r.id}`)).length;return`<div class="grp"><h4>${g[1]}<span class="small muted" style="font-family:var(--sans);font-style:normal">${n}/${rs.length}</span></h4>${rs.map(r=>chk(`days/${dk}/rit/${r.id}`,r.l,r.s,true)).join("")}</div>`}).join("")}<div class="note" style="margin-top:12px">Never zero twice. Three rituals ticked counts as a day you showed up.</div>`,{cls:"s4",r:`${steps.filter(x=>x.k==="rit"&&x.done).length} of ${rits.length}`});
+  const ritCard=card("rituals","Rituals","flame",`${GROUPS.map(g=>{const rs=rits.filter(r=>r.g===g[0]);if(!rs.length)return"";const n=rs.filter(r=>gp(`days/${dk}/rit/${r.id}`)).length;return`<div class="grp"><h4>${g[1]}<span class="small muted" style="font-family:var(--sans);font-style:normal">${n}/${rs.length}</span></h4>${rs.map(r=>chk(`days/${dk}/rit/${r.id}`,r.l,r.s,true)).join("")}</div>`}).join("")}<div class="note" style="margin-top:12px">Never zero twice. Three rituals ticked earns a star.</div>`,{cls:"s4",r:`${steps.filter(x=>x.k==="rit"&&x.done).length} of ${rits.length}`});
 
-  const needleCard=card("needle","Needle-movers","compass",["Weight","Car","Job"].map((n,i)=>`<div style="margin-bottom:12px"><div class="small muted" style="margin-bottom:4px"><b>${n}</b> · ${esc(m.f[i])}</div><div class="inl"><input type="checkbox" ${B(`days/${dk}/t3d${i}`)} ${gp(`days/${dk}/t3d${i}`)?"checked":""} aria-label="${n} done">${txt(`days/${dk}/t3/${i}`,"Smallest next step?")}</div></div>`).join(""),{r:esc(m.lbl)});
+  const needleCard=card("needle","Errands for the Lady","compass",["Weight","Car","Job"].map((n,i)=>`<div style="margin-bottom:12px"><div class="small muted" style="margin-bottom:4px"><b>${n}</b> · ${esc(m.f[i])}</div><div class="inl"><input type="checkbox" ${B(`days/${dk}/t3d${i}`)} ${gp(`days/${dk}/t3d${i}`)?"checked":""} aria-label="${n} done">${txt(`days/${dk}/t3/${i}`,"Smallest next step?")}</div></div>`).join(""),{r:esc(m.lbl)});
 
   const waterCard=card("water","Water","drop",`<div class="water">${Array.from({length:Math.max(wg,S.water)},(_,i)=>`<button class="${i<S.water?"on":""}" data-act="water" data-n="${i+1}" aria-label="${i+1} glasses"></button>`).join("")}</div>${bar(S.water,wg)}`,{r:`<span class="num">${S.water} / ${wg} glasses</span>`});
 
@@ -114,13 +164,13 @@ function pToday(arg){
   }
 
   const museCard=card("muse","Muse of the day","star-four",`<div class="it" style="font-size:1.3rem;line-height:1.2">${esc(muse[0])}</div><div class="small muted" style="margin:2px 0 6px"><i>${esc(muse[1])}</i></div><p class="small">${esc(muse[2])}</p>`,{cls:"s4",r:`<button class="tx" data-act="muse">another</button>`});
-  const closeCard=card("close","Close the day","check-circle",`<button class="btn ${d.done?"":"solid"}" data-act="markDone" style="width:100%">${d.done?"✓ Day closed (tap to reopen)":"Close the day"}</button><label class="f">Reward I’m taking</label>${txt(`days/${dk}/reward`,"tea, bath, a chapter, a movie")}<p class="small muted" style="margin-top:10px">Days shown up in ${esc(monthLabel(dk.slice(0,7)))}: <b class="num">${monthDone(dk.slice(0,7))}</b></p>`,{cls:"s4"});
+  const closeCard=card("close","Close the day","check-circle",`<button class="btn ${d.done?"":"solid"}" data-act="markDone" style="width:100%">${d.done?"✓ Day closed (tap to reopen)":"Close the day"}</button><label class="f">Reward I’m taking</label>${txt(`days/${dk}/reward`,"tea, bath, a chapter, a movie")}<p class="small muted" style="margin-top:10px">Stars: <b class="num">${ss.stars}</b>${ss.run>1?` · Run <b class="num">${ss.run}</b>`:""} · best Run <b class="num">${ss.best}</b><br>Days shown up in ${esc(monthLabel(dk.slice(0,7)))}: <b class="num">${monthDone(dk.slice(0,7))}</b></p>`,{cls:"s4"});
   const pinsCard=card("pins","Pinned images","push-pin",`${pinsOf().length?`<div class="pgal">${pinsOf().map(pinHtml).join("")}</div>`:""}<div class="inl pinadd"><input type="url" id="pinU" placeholder="image link (https://…)"><input type="text" id="pinC" placeholder="caption (optional)"><button class="btn solid sm" data-act="pinAdd">Pin</button></div>`,{cls:"s4"});
 
   const nav=`<button class="btn sm" data-act="custom" title="Customize Today"><i class="ph ph-sliders-horizontal"></i><span class="hide-m">Customize</span></button><button class="btn sm" data-act="go" data-h="#today/${addDays(dk,-1)}" aria-label="previous day">←</button>${isToday?"":`<button class="btn sm" data-act="go" data-h="#today">Today</button>`}<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,1)}" aria-label="next day">→</button>`;
   const phChip=ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name}</span>`:"";
   const lineQ=typeof LINES!=="undefined"?LINES[Math.floor(parse(dk)/864e5)%LINES.length]:"";
-  return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(m.ph)}</span> ${phChip}`,nav)+customPanel()+
+  return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(bk(m.ph))}</span> ${phChip}`,nav)+customPanel()+calbertCard(dk,steps,S,nm,isToday,hr,dayN,ss)+
    `<div class="line"><i class="ph ph-quotes"></i><span class="it">${esc(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${esc(m.line)}</span>`:""}</div>`+
    `<div class="board">${nowCard}${lightCard}${journalCard(dk,d)}${stk("s4",moodCard,waterCard,moveCard)}${ritCard}${mealsCard}${stk("s4",needleCard,cycleCard)}${museCard}${closeCard}${pinsCard}</div>`;
 }
@@ -226,7 +276,7 @@ function pMonth(arg){
     return`<a class="c ${out?"out":""} ${k===todayKey()?"today":""} ${ci?"ph":""} ${ci&&ci.pred?"pred":""}" ${ci?`style="--ph:${PHASES[ci.ph].hue}"`:""} href="#today/${k}" aria-label="${short(k)}"><span class="n num">${parse(k).getDate()}</span><span class="m">${dots}</span></a>`}).join("");
   const calCard=card("mcal","Calendar","calendar-blank",`<div class="cal">${cal}</div><div class="legend"><span style="--lc:var(--acc)">showed up</span><span style="--lc:hsl(200 50% 55%)">water goal</span><span style="--lc:var(--warn)">food logged</span>${st.settings.trackCycle!==false?Object.values(PHASES).map(p=>`<span style="--lc:hsl(${p.hue} 40% 55%)">${p.name.toLowerCase()}</span>`).join(""):""}</div>`,{cls:"s7"});
   const done=S.filter(s=>s.done).length,logged=S.filter(s=>s.has).length,left=keys.filter(k=>k>=todayKey()).length,pct=Math.round(done/nDays*100);
-  const topCard=`<section class="card nowcard s4" id="mtop"><div class="nc"><div class="k">${esc(monthLabel(id))}</div><div class="t">${m?esc(m.ph):"This month"}</div><div class="muted small">${done} days showed up · ${logged} logged${left&&left<nDays?` · ${left} days left`:""}</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div></section>`;
+  const topCard=`<section class="card nowcard s4" id="mtop"><div class="nc"><div class="k">${esc(monthLabel(id))}</div><div class="t">${m?esc(bk(m.ph)):"This month"}</div><div class="muted small">${done} days showed up · ${logged} logged${left&&left<nDays?` · ${left} days left`:""}</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div></section>`;
   const ws=weightsSorted().filter(x=>x.d.startsWith(id)),wch=ws.length>1?ws[ws.length-1].w-ws[0].w:null;
   const statsCard=card("mstats","The month in numbers","chart-bar",`<div class="tiles tiles6">${kpi("Showed up",done+"<small> / "+nDays+"</small>","days")}${kpi("Avg steps",r0(avg(S.filter(s=>s.steps).map(s=>s.steps))),"logged days")}${kpi("Avg sleep",r1(avg(S.filter(s=>s.sleep).map(s=>s.sleep)))+"<small> h</small>","logged nights")}${kpi("Avg water",r1(avg(S.filter(s=>s.water).map(s=>s.water)))+"<small> gl</small>",`goal ${wg}`)}${kpi("Energy · mood",`${r1(avg(S.filter(s=>s.energy).map(s=>s.energy)))} · ${r1(avg(S.filter(s=>s.mood).map(s=>s.mood)))}`,"out of 5")}${kpi("Weight",ws.length?ws[ws.length-1].w:"–",wch!=null?`${wch>0?"+":""}${r1(wch)} · ${ws.length} weigh-ins`:`${ws.length} weigh-in`)}</div>`,{cls:"s12"});
   const pl=planLine(),wsAll=weightsSorted();
@@ -237,8 +287,8 @@ function pMonth(arg){
   let planCard="",msCard="",detCard="",bookCard="";
   if(m){
     const n=m.ms.filter((_,i)=>gp(`months/${m.id}/ms/${i}`)).length;
-    planCard=card("mplan",`${esc(m.ph)} · ${esc(m.lbl)}`,"flag",`<p class="lede" style="margin-bottom:10px">${esc(m.line)}</p>${bar(n,m.ms.length)}<div class="focus3">${["Weight","Car","Job"].map((x,i)=>`<div><div class="small muted"><b>focus · ${x}</b></div><p class="small">${esc(m.f[i])}</p></div>`).join("")}</div>`,{cls:"s8",r:`<span class="num">${n}/${m.ms.length} milestones</span>`});
-    msCard=card("mmiles","Milestones","check-square",m.ms.map((x,i)=>chk(`months/${m.id}/ms/${i}`,esc(x),"",true)).join(""),{r:m.lost?`pace −${m.lost} lbs`:"baseline"});
+    planCard=card("mplan",`${esc(bk(m.ph))} · ${esc(m.lbl)}`,"flag",`<p class="lede" style="margin-bottom:10px">${esc(m.line)}</p>${bar(n,m.ms.length)}<div class="focus3">${["Weight","Car","Job"].map((x,i)=>`<div><div class="small muted"><b>focus · ${x}</b></div><p class="small">${esc(m.f[i])}</p></div>`).join("")}</div>`,{cls:"s8",r:`<span class="num">${n}/${m.ms.length} quests</span>`});
+    msCard=card("mmiles","Quests","check-square",m.ms.map((x,i)=>chk(`months/${m.id}/ms/${i}`,esc(x),"",true)).join(""),{r:m.lost?`pace −${m.lost} lbs`:"baseline"});
     detCard=card("mdetail","The month in detail","list-bullets",Object.entries(m.sec).map(([k,v],i)=>`<details ${i===0?"open":""}><summary><span class="ml" style="font-size:1.05rem">${k}</span></summary><div class="mbody">${ul(v.map(esc))}</div></details>`).join(""));
   }else planCard=card("mplan","Plan","flag",`<p class="small muted">The written plan runs November 2026 – December 2027. Trackers and notes still work here.</p>`,{cls:"s8"});
   const rc=typeof RECS!=="undefined"&&RECS[id];
@@ -251,13 +301,13 @@ function pMonth(arg){
    ${fld("Carrying forward","what comes with you, and what do you leave here?",rte(p+"/forward","keep… / leave…",100))}</div>
    ${fld("Notes","anything else.",area(p+"/note","What happened? What would make next month easier?",3))}`,{cls:"s8",r:esc(monthLabel(id))});
   const nav=`<button class="btn sm" data-act="go" data-h="#month/${addMonths(id,-1)}">←</button><button class="btn sm" data-act="go" data-h="#month">This month</button><button class="btn sm" data-act="go" data-h="#month/${addMonths(id,1)}">→</button>`;
-  return head("Month",monthLabel(id)+(m?` · ${m.ph}`:""),nav)+
+  return head("Month",monthLabel(id)+(m?` · ${bk(m.ph)}`:""),nav)+
    `<div class="board">${topCard}${planCard}${calCard}${stk("s5",msCard,cycCard)}${statsCard}${wCard}${bookCard}${reflect}${stk("s4",evCard(id),detCard)}</div>`;
 }
 
 /* ============================================================ PLAN (one router, one tab bar) */
 const PLAN_TABS=[["roadmap","Roadmap"],["map","Why &amp; identity"],["tracks","Tracks"],["toolkit","Toolkit"],["atelier","Atelier"],["syllabus","Syllabus"]];
-const PLAN_SUB={roadmap:"the map, the milestones, the next step",map:"four years, one person arriving",tracks:"car, job, health and money",toolkit:"for the days that wobble",atelier:"the aesthetic you’re building",syllabus:"the four-year cultural syllabus"};
+const PLAN_SUB={roadmap:"the map, the quests, the next step",map:"four years, one person arriving",tracks:"car, job, health and money",toolkit:"for the days that wobble. it lives by the lampshade",atelier:"the aesthetic you’re building",syllabus:"the four-year cultural syllabus"};
 function pPlan(arg){
   const t=PLAN_TABS.some(x=>x[0]===arg)?arg:"roadmap";
   const tabs=`<div class="subtabs">${PLAN_TABS.map(([k,l])=>`<button class="${t===k?"on":""}" data-act="go" data-h="#plan/${k}">${l}</button>`).join("")}</div>`;
@@ -267,7 +317,7 @@ function pPlan(arg){
 function planRoadmap(){
   const now=monthNear(todayKey()),nowId=now.id,s0=parse("2026-11-01"),e0=parse("2027-12-31"),pct=Math.max(0,Math.min(100,Math.round((parse(todayKey())-s0)/(e0-s0)*100)));
   const done=m=>m.ms.filter((_,i)=>gp(`months/${m.id}/ms/${i}`)).length,tot=M.reduce((a,m)=>a+m.ms.length,0),dn=M.reduce((a,m)=>a+done(m),0);
-  const tl=M.map(m=>{const n=done(m);return `<a class="tile ${m.id===nowId?"cur":m.id<nowId?"past":""}" href="#month/${m.id}"><span class="k">${esc(m.ph)}</span><b>${esc(m.lbl)}</b>${bar(n,m.ms.length)}<span class="n">${n}/${m.ms.length} milestones${m.lost?` · −${m.lost} lbs`:""}</span><small>${esc(m.line)}</small></a>`}).join("");
+  const tl=M.map(m=>{const n=done(m);return `<a class="tile ${m.id===nowId?"cur":m.id<nowId?"past":""}" href="#month/${m.id}"><span class="k">${esc(bk(m.ph))}</span><b>${esc(m.lbl)}</b>${bar(n,m.ms.length)}<span class="n">${n}/${m.ms.length} quests${m.lost?` · −${m.lost} lbs`:""}</span><small>${esc(m.line)}</small></a>`}).join("");
   const qi=Math.floor(new Date().getMonth()/3);
   const qs=QUARTERS.map((q,i)=>`<div class="q ${i===qi&&todayKey()>="2027-01"?"cur":""}"><span class="k small muted">${q[0]} · ${q[1]}</span><div class="big">${q[2]}</div><p>${esc(q[3])}</p></div>`).join("");
   const cs=(k,A)=>A.filter((_,i)=>gp(`checks/${k}/${i}`)).length;
@@ -275,7 +325,7 @@ function planRoadmap(){
   const cur=M.find(m=>m.id===nowId);
   return `<div class="board">
    <section class="card tint s8"><div class="small muted" style="margin-bottom:6px">identity</div><p class="quote">“at my core, i am a maker of meaning. i am here to tell stories that matter, to end the harmful cycles before me, to break curses, and to be happy and joyful.”</p></section>
-   <section class="card nowcard s4"><div class="nc"><div class="k">${esc(now.ph)}</div><div class="t">${dn}/${tot}</div><div class="muted small">milestones done</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div></section>
+   <section class="card nowcard s4"><div class="nc"><div class="k">${esc(bk(now.ph))}</div><div class="t">${dn}/${tot}</div><div class="muted small">quests done</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div></section>
    ${card("proad","Roadmap","path",`<div class="tl">${tl}</div>`,{cls:"s12",r:"nov 2026 → dec 2027"})}
    ${cur?card("pmonth","This month","flag",`<p class="lede" style="margin-bottom:8px">${esc(cur.line)}</p>${cur.ms.map((x,i)=>chk(`months/${cur.id}/ms/${i}`,esc(x),"",true)).join("")}<a class="btn sm" style="margin-top:10px" href="#month/${cur.id}">Open month →</a>`,{cls:"s6",r:esc(cur.lbl)}):""}
    ${card("ptracks","Tracks","compass",`<div class="trks">${trk}</div><a class="btn sm" style="margin-top:10px" href="#plan/tracks">Open tracks →</a>`,{cls:"s6"})}
@@ -308,7 +358,7 @@ function ensurePin(){
 function pVision(){
   const u=(st.settings.pinBoard||"").trim(),items=visOf(),w=Math.max(320,Math.min(1200,(document.getElementById("main").clientWidth||900)-60));
   setTimeout(ensurePin,60);
-  const grid=items.length?`<div class="masonry">${items.map(v=>`<figure><img data-img="${esc(v.img)}" alt="${esc(v.c||"")}"><figcaption data-act="visCap" data-id="${esc(v.id)}">${esc(v.c||"add a caption")}</figcaption><button class="x" data-act="visDel" data-id="${esc(v.id)}" aria-label="Remove"><i class="ph ph-x"></i></button></figure>`).join("")}</div>`:`<div class="note">your board is empty. add images that make you feel like the person you’re becoming.</div>`;
+  const grid=items.length?`<div class="masonry">${items.map(v=>`<figure><img data-img="${esc(v.img)}" alt="${esc(v.c||"")}"><figcaption data-act="visCap" data-id="${esc(v.id)}">${esc(v.c||"add a caption")}</figcaption><button class="x" data-act="visDel" data-id="${esc(v.id)}" aria-label="Remove"><i class="ph ph-x"></i></button></figure>`).join("")}</div>`:`<div class="note">Nothing on the board. Pin a few things that look like where you’re going. I’ll pretend I’m not choosy.</div>`;
   return head("Vision","scroll it when you need to remember who you’re becoming",`<span class="muted small num">${items.length} image${items.length===1?"":"s"}</span>`)+
    `<label class="drop" id="vdrop"><i class="ph ph-image-square"></i>Drop images here, or tap to add<input type="file" accept="image/*" multiple data-vis="1" class="hide"></label>`+
    `<div style="margin-top:14px">${grid}</div>`+
@@ -316,14 +366,14 @@ function pVision(){
 }
 
 /* ============================================================ ARCHIVE extras */
-function archSummary(){
+function archSummary(){const ssA=starStats();
   const ks=loggedDays(),end=todayKey();
   const cells=[];
   for(let k=monday(addDays(end,-364));k<=end;k=addDays(k,1)){const s=st.days[k]?dayStats(k):null;cells.push(`<i class="${s&&s.has?(s.done?((s.d.journal||s.win||s.d.j_anchor)?"l3":"l2"):"l1"):""}" title="${esc(short(k))}"></i>`)}
   let run=0,best=0,showed=0,cur=0;
   if(ks.length)for(let k=ks[0];k<=end;k=addDays(k,1)){if(dayStats(k).done){run++;showed++;if(run>best)best=run}else run=0}
   let k=end;if(!dayStats(k).done)k=addDays(k,-1);while(dayStats(k).done){cur++;k=addDays(k,-1)}
-  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>The past year<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Current streak",cur+"<small> d</small>","showed-up days in a row")}${kpi("Best streak",best+"<small> d</small>","so far")}</div><div class="heat">${cells.join("")}</div><div class="legend"><span style="--lc:var(--t15)">nothing</span><span style="--lc:var(--a2)">logged</span><span style="--lc:var(--a3)">showed up</span><span style="--lc:var(--acc)">showed up + wrote</span></div></div>`;
+  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>The past year<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Stars",ssA.stars,"they only ever go up")}${kpi("Best Run",ssA.best+"<small> d</small>","consecutive starred days")}${ssA.run>0?kpi("Run now",ssA.run+"<small> d</small>","one missed day is forgiven"):""}</div><div class="heat">${cells.join("")}</div><div class="legend"><span style="--lc:var(--t15)">nothing</span><span style="--lc:var(--a2)">logged</span><span style="--lc:var(--a3)">showed up</span><span style="--lc:var(--acc)">showed up + wrote</span></div></div>`;
 }
 
 /* ============================================================ ARCHIVE */
@@ -333,13 +383,13 @@ function archDays(){
   if(amo)ks=ks.filter(k=>k.startsWith(amo));
   const q=aq.trim().toLowerCase();
   if(q)ks=ks.filter(k=>{const d=st.days[k];return[d.journal,d.win,d.grat,d.reward,d.tomorrow,...Object.values(d.meals||{}).map(x=>x.t)].join(" ").toLowerCase().includes(q)});
-  if(!ks.length)return`<p class="muted">No days match yet. Days appear here once you log something.</p>`;
+  if(!ks.length)return`<p class="muted">Nothing in the drawer yet. Days appear here once you log something.</p>`;
   return`<div class="arch">${ks.slice(0,250).map(k=>{const s=dayStats(k),ci=cycleInfo(k);return`<a class="arow" href="#today/${k}"><b>${short(k)}, ${parse(k).getFullYear()}</b><div class="chips">${s.done?chip("showed up",1):""}${s.rit?chip(s.rit+" rituals"):""}${s.water?chip(s.water+" water"):""}${s.steps?chip(s.steps.toLocaleString()+" steps"):""}${s.sleep?chip(s.sleep+"h sleep"):""}${s.kcal?chip(s.kcal.toLocaleString()+" kcal"):""}${s.mood?chip('<i class="ph ph-'+FACE[s.mood]+'"></i>'+MOODS[s.mood]):""}${s.energy?chip('<i class="ph ph-'+BATT[s.energy]+'"></i>'+ENERGY[s.energy]):""}${s.flow?chip("flow "+s.flow):""}${ci&&s.has?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name.toLowerCase()}</span>`:""}</div><span class="muted small" style="max-width:26ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.win)}</span></a>`}).join("")}</div>${ks.length>250?`<p class="muted small">Showing the latest 250 of ${ks.length}. Narrow with search or month.</p>`:""}`;
 }
 function archWeeks(){
   const set={};loggedDays().forEach(k=>{set[monday(k)]=1});st.weights.forEach(w=>{set[monday(w.d)]=1});
   const ws=Object.keys(set).sort().reverse();
-  if(!ws.length)return`<p class="muted">Weeks appear here once you log days or a weigh-in.</p>`;
+  if(!ws.length)return`<p class="muted">Nothing in the drawer yet. Weeks appear here once you log days or a weigh-in.</p>`;
   return`<div class="arch">${ws.map(mo=>{const days=weekDays(mo),S=days.map(dayStats),w=weekWeight(mo),wk=isoWeek(mo),rv=st.weeks[wk]||{};
     return`<a class="arow" href="#week/${mo}"><b>${md(mo)} – ${md(days[6])}</b><div class="chips">${chip(S.filter(s=>s.done).length+"/7 showed up",S.filter(s=>s.done).length>=4)}${chip(r0(avg(S.filter(s=>s.steps).map(s=>s.steps)))+" avg steps")}${chip(r1(avg(S.filter(s=>s.sleep).map(s=>s.sleep)))+"h sleep")}${w?chip("weigh-in "+w.w,1):""}${rv.win1?chip("review written"):""}</div><span class="muted small">${esc(rv.win1||"")}</span></a>`}).join("")}</div>`;
 }
@@ -347,7 +397,7 @@ function archMonths(){
   const ks=loggedDays();const set={};ks.forEach(k=>set[k.slice(0,7)]=1);st.weights.forEach(w=>set[w.d.slice(0,7)]=1);Object.keys(st.months).forEach(k=>set[k]=1);set[mkey(new Date())]=1;
   const ms=Object.keys(set).sort().reverse();
   return`<div class="arch">${ms.map(id=>{const m=M.find(x=>x.id===id),n=daysIn(id),S=Array.from({length:n},(_,i)=>dayStats(id+"-"+p2(i+1))),ws=weightsSorted().filter(x=>x.d.startsWith(id)),ds=m?m.ms.filter((_,i)=>gp(`months/${id}/ms/${i}`)).length:0;
-    return`<a class="arow" href="#month/${id}"><b>${monthLabel(id)}</b><div class="chips">${chip(S.filter(s=>s.done).length+" days showed up",S.filter(s=>s.done).length>=10)}${m?chip(ds+"/"+m.ms.length+" milestones",ds===m.ms.length):""}${chip(r0(avg(S.filter(s=>s.steps).map(s=>s.steps)))+" avg steps")}${ws.length?chip("weight "+ws[ws.length-1].w,1):""}</div><span class="muted small">${m?esc(m.ph):""}</span></a>`}).join("")}</div>`;
+    return`<a class="arow" href="#month/${id}"><b>${monthLabel(id)}</b><div class="chips">${chip(S.filter(s=>s.done).length+" days showed up",S.filter(s=>s.done).length>=10)}${m?chip(ds+"/"+m.ms.length+" quests",ds===m.ms.length):""}${chip(r0(avg(S.filter(s=>s.steps).map(s=>s.steps)))+" avg steps")}${ws.length?chip("weight "+ws[ws.length-1].w,1):""}</div><span class="muted small">${m?esc(bk(m.ph)):""}</span></a>`}).join("")}</div>`;
 }
 const daysIn=id=>parse(addDays(addMonths(id,1)+"-01",-1)).getDate();
 function archTrends(){
@@ -373,14 +423,14 @@ function pArchive(arg){
     const mos=[...new Set(loggedDays().map(k=>k.slice(0,7)))].sort().reverse();
     body=archSummary()+`<div class="row" style="margin-bottom:12px"><div style="flex:2 1 220px"><input type="text" id="aq" placeholder="Search journal, wins, meals…" value="${esc(aq)}" aria-label="search"></div><div><select id="amo" aria-label="month"><option value="">All months</option>${mos.map(m=>`<option value="${m}" ${amo===m?"selected":""}>${monthLabel(m)}</option>`).join("")}</select></div></div><div id="archList">${archDays()}</div>`;
   }else if(t==="weeks")body=archWeeks();else if(t==="months")body=archMonths();else if(t==="trends")body=archTrends();else body=archCycle();
-  return head("Archive","Every day, week and month you’ve logged, and the trends between them.")+archTabs(t)+body;
+  return head("Archive","The drawer: every day, week and month you’ve logged, and the trends between them.")+archTabs(t)+body;
 }
 
 /* ---- plan sub-pages ---- */
 function det(t,body,open){return`<details ${open?"open":""}><summary><span class="ml">${t}</span></summary><div class="mbody">${body}</div></details>`}
 function planMap(){
   const y=YEARS[0],nowId=monthNear(todayKey()).id;
-  const year=M.map(m=>{const n=m.ms.filter((_,i)=>gp(`months/${m.id}/ms/${i}`)).length;return`<a class="arow" href="#month/${m.id}" style="${m.id===nowId?"border-color:var(--accT)":""}"><b>${m.lbl}</b><div class="chips">${chip(m.ph,m.id===nowId)}${chip(n+"/"+m.ms.length+" milestones",n===m.ms.length)}${chip(m.lost?"−"+m.lost+" lbs pace":"baseline")}</div><span class="muted small serif" style="font-size:.95rem">${esc(m.line)}</span></a>`}).join("");
+  const year=M.map(m=>{const n=m.ms.filter((_,i)=>gp(`months/${m.id}/ms/${i}`)).length;return`<a class="arow" href="#month/${m.id}" style="${m.id===nowId?"border-color:var(--accT)":""}"><b>${m.lbl}</b><div class="chips">${chip(bk(m.ph),m.id===nowId)}${chip(n+"/"+m.ms.length+" quests",n===m.ms.length)}${chip(m.lost?"−"+m.lost+" lbs pace":"baseline")}</div><span class="muted small serif" style="font-size:.95rem">${esc(m.line)}</span></a>`}).join("");
   return`<div class="cols c2"><div class="col">
    <div class="card"><h3>Where you are → where you’re going</h3><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><div class="small muted"><b>Right now</b></div>${ul(["Gig work, low pay, high procrastination","Living at home; no license or car yet","HUSKY lapsed (fixable, with a form)","Anxiety, depression, CPTSD; possible OCD/AuDHD (assessment is a 2027 goal)","$0 budget; every step has a free route"])}</div><div><div class="small muted"><b>2030: the north star self</b></div>${ul(["Your own space, schedule and car","Stable, well-paying job with benefits","Savings and quiet financial confidence","A village, a creative life, a channel","Mostly free of shame; defined by what she makes and loves"])}</div></div><div class="note" style="margin-top:10px">The gap isn’t a verdict. It’s a to-do list with an order.</div></div>
    <div class="card"><h3>The four-year spine</h3><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">${YEARS.map(x=>`<div><div class="it" style="font-size:1.6rem;line-height:1">${x.y}</div><div class="small muted" style="margin-bottom:4px"><b>${x.t}</b></div>${ul(x.items.map(i=>`<b>${i[0]}.</b> ${i[1]}`))}</div>`).join("")}</div></div>
@@ -406,8 +456,8 @@ function planTracks(){
    </div></div>`;
 }
 function planToolkit(){
-  return`<div class="cols c2"><div class="col"><div class="card">${det("I wavered. What now? (the reset ladder)",ul(TOOLKIT.reset)+`<p class="it" style="font-style:italic;margin-top:8px">Say it out loud: “No worries, I have a back-up plan. I have resources for this.”</p>`,true)}${det("Procrastination &amp; executive dysfunction",ul(TOOLKIT.proc)+`<p class="note" style="margin-top:10px">I can’t diagnose ADHD, autism, or OCD, but if these tactics feel hard to hold even when you’re motivated, ask a clinician for an evaluation.</p>`)}${det("Candle-day menu",ul(TOOLKIT.candle))}${det("The shame loop breaker",ul(TOOLKIT.shame)+`<p class="it" style="font-style:italic">Shame is never in the driver’s seat.</p>`)}</div>
-   <div class="card tint"><h3>When it gets dark</h3><p class="small">If the heaviness turns into thoughts of not wanting to be here, please reach out to a person right away. In the US, call or text <b>988</b> (Suicide &amp; Crisis Lifeline) any time. If you’re in immediate danger, call <b>911</b>. This plan will wait. You matter more than the plan.</p></div></div>
+  return`<div class="cols c2"><div class="col"><div class="card">${det("I wavered. What now? (the reset ladder)",ul(TOOLKIT.reset)+`<p class="it" style="font-style:italic;margin-top:8px">Say it out loud: “No worries, I have a back-up plan. I have resources for this.”</p>`,true)}${det("Procrastination &amp; executive dysfunction",ul(TOOLKIT.proc)+`<p class="note" style="margin-top:10px">I can’t diagnose ADHD, autism, or OCD, but if these tactics feel hard to hold even when you’re motivated, ask a clinician for an evaluation.</p>`)}${det("Moth-day menu",ul(TOOLKIT.candle))}${det("The shame loop breaker",ul(TOOLKIT.shame)+`<p class="it" style="font-style:italic">Shame is never in the driver’s seat.</p>`)}</div>
+   <div class="card tint"><h3>When it gets dark</h3><p class="small">I’m a moth, and I’m no use for this part. People are. If the heaviness turns into thoughts of not wanting to be here, please reach out to a person right away. In the US, call or text <b>988</b> (Suicide &amp; Crisis Lifeline) any time. If you’re in immediate danger, call <b>911</b>. This plan will wait. You matter more than the plan.</p></div></div>
    <div class="col"><div class="card">${det("Plan B and Plan C",TOOLKIT.planb.map(([n,a])=>`<p class="small"><b>${n}</b></p>${ul(a)}`).join(""),true)}${det("Reward menu",ul(TOOLKIT.reward))}${det("$0 resource list (verify locally)",ul(TOOLKIT.resources))}</div></div></div>`;
 }
 function planAtelier(){
@@ -423,8 +473,8 @@ function planAtelier(){
 /* ============================================================ SETTINGS */
 function pSettings(){
   const s=st.settings;
-  const prof=`<div class="card"><h3>Profile</h3><div class="inl" style="gap:16px;align-items:center">${avatarHtml("lg")}<div style="flex:1"><label class="btn sm">Upload avatar<input type="file" id="avf" accept="image/*" style="display:none"></label> ${(s.avatar||s.avatarId)?`<button class="btn sm ghost" data-act="rmAvatar">Remove</button>`:""}<p class="small muted" style="margin-top:6px">Transparent PNGs stay transparent. Stored in your image library and synced with Drive.</p></div></div><label class="f">Your name</label>${txt("settings/name","What should the app call you?")}</div>`;
-  const look=`<div class="card"><h3>Look</h3><label class="f" style="margin-top:0">Theme</label><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><label class="f">House (accent colour)</label><div class="sw">${HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" title="${h[1]}" aria-label="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("")}</div><p class="small muted">Look settings are per device.</p></div>`;
+  const prof=`<div class="card"><h3>Profile</h3><div class="inl" style="gap:16px;align-items:center">${avatarHtml("lg")}<div style="flex:1"><label class="btn sm">Upload avatar<input type="file" id="avf" accept="image/*" style="display:none"></label> ${(s.avatar||s.avatarId)?`<button class="btn sm ghost" data-act="rmAvatar">Remove</button>`:""}<p class="small muted" style="margin-top:6px">Transparent PNGs stay transparent. Stored in your image library and synced with Drive.</p></div></div><label class="f">Your name</label>${txt("settings/name","Morning Star, unless you say otherwise")}</div>`;
+  const look=`<div class="card"><h3>Look</h3><label class="f" style="margin-top:0">Theme</label><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><label class="f">Accent colour</label><div class="sw">${HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" title="${h[1]}" aria-label="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("")}</div><p class="small muted">Look settings are per device.</p></div>`;
   const targets=`<div class="card"><h3>Targets</h3><div class="row"><div><label class="f" style="margin-top:0">Water goal (glasses)</label>${numIn("settings/waterGoal","8")}</div><div><label class="f" style="margin-top:0">Daily steps override</label>${numIn("settings/stepGoal","by month")}</div></div><div class="row"><div><label class="f">Calorie goal (optional)</label>${numIn("settings/calGoal","none")}</div><div><label class="f">Starting weight (lbs)</label>${numIn("settings/startW","","step=\".1\"")}</div><div><label class="f">Goal: lbs to lose in 2027</label>${numIn("settings/goal","80")}</div></div><p class="small muted" style="margin-top:8px">Leave the calorie goal empty to log without a target. A doctor or dietitian is the right person to set one.</p></div>`;
   const cyc=`<div class="card"><h3>Cycle</h3><label class="ck" style="border:0"><input type="checkbox" ${B("settings/trackCycle")} data-re="1" ${s.trackCycle!==false?"checked":""}><span>Track my cycle and show phase tips</span></label><div class="row"><div><label class="f">Usual cycle length (days)</label>${numIn("settings/cycleLen","28")}</div><div><label class="f">Usual period length (days)</label>${numIn("settings/periodLen","5")}</div></div><p class="small muted" style="margin-top:8px">Once you’ve logged a few periods, the app uses your own averages instead. Add or edit periods in Archive → Cycle.</p></div>`;
   const sync=`<div class="card"><h3>Sync across devices <span class="r"><span class="syncdot"></span><span class="syncstat"></span></span></h3><p class="small muted">Your data lives in this browser and, once connected, in a file in your own Google Drive. Sync merges both ways, so editing on your phone and your computer never overwrites either. Setup steps are in the README.</p><label class="f">Apps Script web-app URL</label><input type="url" id="syncUrl" value="${esc(LS.syncUrl)}" placeholder="https://script.google.com/macros/s/…/exec"><label class="f">Secret token (same one you put in the script)</label><input type="password" id="syncTok" value="${esc(LS.token)}" autocomplete="off" placeholder="a long random phrase"><label class="ck" style="border:0"><input type="checkbox" id="syncAuto" ${LS.auto?"checked":""}><span>Sync automatically when I open the app and after changes</span></label><div class="chips" style="margin-top:8px"><button class="btn solid" data-act="syncNow">Sync now</button><button class="btn" data-act="syncSave">Save connection</button></div><p class="small muted" style="margin-top:8px" id="saved"></p></div>`;
