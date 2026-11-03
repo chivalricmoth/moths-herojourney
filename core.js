@@ -247,6 +247,6 @@ function applyLook(){
   const h=HOUSES.find(x=>x[0]===LS.house)||HOUSES[0];
   document.documentElement.style.setProperty("--ah",h[2]);document.documentElement.style.setProperty("--as",h[3]+"%");
   const m=document.querySelector('meta[name=theme-color]');if(m)m.content=th==="dark"?"#16131a":"#ebe6df";
-  document.querySelectorAll(".themeBtn").forEach(b=>b.textContent=th==="dark"?"☾":"☀");
+  document.querySelectorAll(".themeBtn").forEach(b=>b.innerHTML=th==="dark"?'<i class="ph ph-moon"></i>':'<i class="ph ph-sun"></i>');
 }
 function toast(t){const e=document.getElementById("toast");if(!e)return;e.textContent=t;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2400)}
