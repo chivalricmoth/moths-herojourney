@@ -1,7 +1,7 @@
 /* ============================================================
    north star — plan content (edit freely; the app code lives in app.js)
    ============================================================ */
-const HOUSES=[['winedark','Winedark',350,42],['clairmont','Clairmont',270,34],['rosewood','Rosewood',330,34],['ashford','Ashford',230,38],['witwick','Witwick',150,32],['harelane','Harelane',180,34],['commonwell','Commonwell',30,38]];
+const HOUSES=[['winedark','Winedark',350,42],['clairmont','Plum',270,34],['rosewood','Dusty rose',330,34],['ashford','Indigo',230,38],['witwick','Verdigris',150,32],['harelane','Deep teal',180,34],['commonwell','Amber',30,38]];
 
 const MANTRAS=[
  "No worries, I have a back-up plan. I have resources for this.",
@@ -13,28 +13,42 @@ const MANTRAS=[
  "I am here to be happy and joyful.",
  "Shame does not drive. I do.",
  "I widen the surface area of my life so luck can find me.",
- "A candle day is still a day I showed up.",
+ "A Moth day is still a day I showed up.",
  "Small, then smaller, then started.",
  "Own your weird.",
  "I am a maker of meaning.",
- "Proceed and be bold."
+"I move before I feel ready.",
+"My peace is non-negotiable.",
+"I leave room for things to go right.",
+"I do not apologize for taking up space.",
+"I honor my boundary even when it feels heavy.",
+"Friction is data, not a stop sign.",
+"I give myself permission to be a beginner.",
+"Doubt is a passenger, not the driver.",
+"Clear over comfortable.",
+"I trade perfection for momentum.",
+ "Proceed and be bold!"
 ];
 
 const MUSES=[
- ["Joan of Arc","fierce, unembarrassed bravery","Make the call you’ve been dreading. Stand up while you do it."],
- ["Donna Tartt","curated, intellectual elegance","Make one thing deliberate today (your desk, your outfit, your reading list) and remove one thing that’s just noise."],
+ ["Joan of Arc","fierce, unembarrassed bravery","Make the call you’ve been dreading, and stand up while you do it. She did worse in armour."],
+ ["Donna Tartt","curated, intellectual elegance","Make one thing deliberate today (desk, outfit, reading list) and remove one thing that’s only clutter."],
  ["Alice Cullen","vivacity and charm","Be warm first: greet someone, send one kind text, compliment a stranger."],
- ["Baba Yaga / Circe","strength and wisdom through craft","Treat one unglamorous task like a spell: slow, exact, done well. Cook, clean one surface, set one boundary."],
- ["Villanelle","audacity and independence","Do one bold, harmless thing that’s out of pattern. Say a clean no."],
+ ["Baba Yaga","strength and wisdom through craft","Treat one unglamorous task like a spell: slow, exact, done properly. Cook, clear one surface, set one boundary."],
+ ["Villanelle","audacity and independence","Do one bold, harmless thing that’s out of pattern. Say a clean no, with no paragraph attached."],
  ["Henry Winter","intelligence and a respected presence","Twenty focused minutes of real study (the manual, the résumé). Speak a little slower today."],
  ["Anthony Bourdain","curiosity and hunger for the world","Try something new to eat. Ask a real question. Say yes to one small adventure."],
- ["Charli XCX (post-brat)","dark, sensual, unbothered","Play one song loud and walk like it’s yours. Make something raw and show nobody."],
+ ["Charli XCX (post-brat)","dark, sensual, unbothered","Play one song loud and walk like the pavement owes you rent. Make something raw and show nobody."],
  ["Alexa Chung","effortless it-person style","Get dressed on purpose for a task at home. One-minute outfit: black base, one jewel tone, one warm metal."],
- ["Holly Black","faerie logic and the craft of story","Write 200 words of anything with fairy-tale rules."],
- ["Fiona Apple","unflinching honesty","Write the true sentence in your journal. Don’t soften it."],
- ["David Bowie","reinvention","Change one visible thing: your part, a playlist, a lipstick, the order of your morning."],
- ["Anaïs Nin","the diary as a life","Ten honest lines at night. No editing."],
+ ["Holly Black","faerie logic and the craft of story","Write 200 words of anything with fairy-tale rules. Names matter, and nothing is free."],
+ ["Fiona Apple","unflinching honesty","Write the true sentence in your journal and leave it alone."],
+ ["David Bowie","reinvention","Change one visible thing: your parting, a playlist, a lipstick, the order of your morning."],
+ ["Anaïs Nin","the diary as a life","Ten honest lines at night. No editing. I’ll be reading over your shoulder."],
  ["Eliot Waugh / Julia Wicker","wit plus relentless study","Do the hard study first. Make one joke at your own expense that is kind."],
+ ["Kathleen Hanna", "rebellious noise and unapologetic joy", "Take up space in a room where you usually shrink. Make a loud noise or voice an opinion without asking permission."],
+ ["Derek Jarman", "queer botanical beauty and radical romance", "Plant or tend to one small, beautiful thing today in defiance of a chaotic world."],
+ ["Patti Smith", "raw, poetic dedication", "Dedicate one hour to pure creating—no phone, no audience, just you and the page."],
+ ["Toni Morrison", "mastery and commanding grace", "Take command of your work space. Clean off that damn desk."],
  ["Parisa Kamali","strategic charisma","Plan three moves ahead on one task. Write them down."]
 ];
 
@@ -47,7 +61,7 @@ const RIT=[
  {id:'yoga',g:'morning',t:2,l:"Full yoga flow (15–20 minutes)",s:"Free on YouTube."},
  {id:'walk',g:'day',t:1,l:"A walk, any length",s:"Hallway laps count on bad-weather days."},
  {id:'eat',g:'day',t:1,l:"Produce + protein at your meals",s:"Add before you subtract. Aim for balance and color."},
- {id:'mover',g:'day',t:1,l:"One needle-mover (car, job, or health)",s:"See this month’s three."},
+ {id:'mover',g:'day',t:1,l:"One errand for the Lady (car, job, or health)",s:"See this month’s three."},
  {id:'uncomf',g:'day',t:1,l:"One uncomfortable thing",s:"A call, an email, a stare at the thing you’ve been avoiding."},
  {id:'lift',g:'day',t:2,l:"Strength session",s:"2–3 times a week is plenty. Today if it’s a lift day."},
  {id:'social',g:'day',t:2,l:"Reach out to one human",s:"A text counts. Friendship is built in small deposits."},
@@ -55,8 +69,8 @@ const RIT=[
  {id:'write',g:'evening',t:2,l:"Make something (15 minutes)",s:"Fiction, a thinkpiece, a video-essay outline, a play-by-post reply."},
  {id:'bed',g:'evening',t:0,l:"Lights down, phone away, skin ritual",s:"The night ritual is part of the plan, not a reward for it."}
 ];
-const GROUPS=[['morning','Morning','Start small. Warm cup first.'],['day','Daytime','The needle-movers live here.'],['evening','Evening','Wind down on purpose.']];
-const TIERS=[["candle","Candle","Floor day. Low battery, high pain, high fog. Five things. This counts fully."],["lantern","Lantern","A normal day. Core rituals plus one needle-mover."],["bonfire","Bonfire","Good-energy day. Do the extra, bank the momentum, don’t borrow from tomorrow."]];
+const GROUPS=[['morning','Morning','Start small. Warm cup first.'],['day','Daytime','The errands live here.'],['evening','Evening','Wind down on purpose.']];
+const TIERS=[["candle","Moth","My niece. Pale, rumpled, half asleep, and the best of the lot, not that she’s heard it from me. She sits on your shoulder all day as your body double and points you at the few things that matter. Pick her on the foggy days. A Moth day counts in full. I’ve checked with the Lady."],["lantern","Fox","Quick, clever, stingy with her energy, which I respect. She works beside you as your body double, keeps you to the core rituals and one real errand, and won’t let you wander off. Pick her for a normal day. She’s the one I’d send to the shops."],["bonfire","Hare","Long legs, wild eyes, no patience for dithering. She sprints beside you through the extras, a body double with a stopwatch. Pick her when you’ve got the energy, and don’t let her borrow against tomorrow. Last knight who did is still paying. Ask the hedgehog."]];
 
 const QUARTERS=[
  ["Q1","Jan – Mar","Unlock","Insurance active, permit passed, résumé out, therapy started, habits taking root. Target: −17 lbs."],
@@ -65,70 +79,70 @@ const QUARTERS=[
  ["Q4","Oct – Dec","Harvest","Consolidate everything; build 2028’s foundation. Target: −80 lbs and a real runway."]
 ];
 
-/* gentle daily step targets by month (editable in Settings) */
+/* daily step targets by month (editable in Settings) */
 const STEP_GOALS={"2026-11":3000,"2026-12":4000,"2027-01":5000,"2027-02":5500,"2027-03":6500,"2027-04":7500,"2027-05":8000,"2027-06":9000,"2027-07":9000,"2027-08":10000,"2027-09":10000,"2027-10":10000,"2027-11":10000,"2027-12":10000};
 
 /* ============================================================
    CYCLE PHASES + daily lifestyle tips
    ============================================================ */
 const PHASES={
- menstrual:{name:"Menstrual",hue:350,blurb:"Rest and restore. Energy tends to run lower; be gentle, not absent.",
+ menstrual:{name:"Menstrual",hue:350,blurb:"Rest and restore. Energy runs lower, and the moon business is no reason to skip the plan, only to shrink it.",
   tips:[
-   "Keep the plan at candle size if you need to. A candle day still counts fully.",
-   "Warm, iron-friendly foods are kind right now: lentils, beans, dark leafy greens, red meat if you eat it, with something vitamin-C-rich alongside.",
-   "Heat helps: a warm bath, a heating pad, a hot tea. Choose slow movement: stretching, yoga, an easy walk.",
-   "Go easy on big decisions and hard conversations if you can. Journal first, decide later.",
-   "Hydrate on purpose and protect your sleep window tonight.",
+   "Shrink the plan to Moth size if you need to. A Moth day counts in full. I’ve checked.",
+   "Warm, iron-friendly food helps: lentils, beans, dark leafy greens, red meat if you eat it, with something rich in vitamin C alongside.",
+   "Heat helps: a warm bath, a heating pad, a hot tea. Move slowly: stretching, yoga, an easy walk.",
+   "Put off the big decisions and the hard conversations if you can. Journal first, decide later.",
+   "Drink water on purpose and protect tonight’s sleep window.",
    "Do the lowest-effort version of every ritual. Done small is done."]},
- follicular:{name:"Follicular",hue:150,blurb:"Rising energy. A great window to start things, learn, and apply.",
+ follicular:{name:"Follicular",hue:150,blurb:"Energy climbs. A good window to start things, learn things and send things.",
   tips:[
    "Energy tends to climb. Put the hardest task of the week here: applications, the manual, the résumé.",
    "Good week to try a new workout, a new route, or a new recipe.",
-   "Fresh, light foods feel good: fruit, big salads, sprouts, eggs, fermented foods. Add produce before you subtract anything.",
-   "Great time for brainstorming and starting projects. Open the blank page.",
-   "Make the call or send the networking message. Initiative comes easier now.",
-   "Add a little progression to strength work: one more rep or a slower tempo."]},
+   "Light, fresh food feels good: fruit, big salads, sprouts, eggs, fermented foods. Add produce before you subtract anything.",
+   "Open the blank page. Brainstorming and starting projects come easier now.",
+   "Make the call or send the networking message. Initiative is cheaper this week.",
+   "Add a little progression to strength work: one more rep, or a slower tempo."]},
  ovulatory:{name:"Ovulatory",hue:40,blurb:"Peak social and verbal energy for many people. Use it to be seen.",
   tips:[
-   "Many people feel most social and articulate now. Schedule interviews, calls, and conversations you’ve been dreading.",
+   "Many people feel most social and articulate now. Schedule the interviews, calls and conversations you’ve been dreading.",
    "Higher-intensity movement often feels good: a brisk walk, a lift day, a dance break.",
    "Eat a rainbow: raw veg, berries, quinoa, healthy fats. Plenty of water.",
    "Say yes to the invitation. Reach out to one human today.",
    "Pitch the idea, ask for the thing, speak first in the meeting.",
-   "Record the video, read aloud, record a voice memo. Your voice carries."]},
- luteal:{name:"Luteal",hue:270,blurb:"Turning inward. Detail work and routines are strong; cravings and low mood can show up late in this phase.",
+   "Record the video, read aloud, make a voice memo. Your voice carries."]},
+ luteal:{name:"Luteal",hue:270,blurb:"Turning inward. Detail work and routine are strong; cravings and low mood can show up late in this phase.",
   tips:[
-   "Good for detail work: editing, organizing, admin, finishing what’s already started.",
+   "Good for detail work: editing, organising, admin, finishing what’s already started.",
    "Steady meals help: complex carbs, protein, magnesium-rich foods (pumpkin seeds, dark chocolate, leafy greens). Cravings are information, not failure. The 10% is allowed.",
    "Moderate movement tends to feel best: pilates, yoga, a long walk, lighter lifting.",
-   "If anxiety or mood dips, shrink the day: candle size, early bed, fewer commitments.",
+   "If anxiety or mood dips, shrink the day: Moth size, early bed, fewer commitments.",
    "Protect sleep: lights down earlier, caffeine earlier, phone away.",
-   "Late-phase irritability is real. Do one thing that soothes: warm shower, a book, a candle, a good dinner.",
-   "Wind down the week’s loose ends so the next phase starts clean."]}
+   "Irritability late in the phase is real, and the world is annoying. Do one thing that soothes: a warm shower, a book, a candle, a good dinner.",
+   "Tie off the week’s loose ends so the next phase starts clean."]}
 };
-const CYCLE_NOTE="Phases are estimated from the dates you log, using your usual cycle length. Bodies vary: if cycles are very irregular, very painful, or heavy, bring your log to a doctor. This is a planner, not medical advice.";
+const CYCLE_NOTE="Phases are estimated from the dates you log, using your usual cycle length. Bodies vary. If cycles are very irregular, very painful or heavy, bring your log to a doctor. This is a planner, not medical advice.";
 
 /* ============================================================
    MONTH-BY-MONTH PLAN
    ============================================================ */
 const M=[
 {id:"2026-11",lbl:"November 2026",ph:"Runway",gh:"embers",lost:0,
- line:"Open the doors you’ve been told are locked.",
+ line:"Prologue, The Thaw. You’ve been told the doors are locked. I’ve checked, and most are only stuck. Start with the HUSKY one.",
  f:["Baseline only: one weigh-in, one 10-minute walk after a meal.","Read the CT Driver’s Manual (one chapter a week); start the free Work Zone Safety course.","Reapply to HUSKY and track down the tax paperwork behind the lapse."],
  sec:{
   "Body":["No dieting yet. Your only job is to collect a baseline: one weigh-in (write it down, no verdict) and, if it feels okay, one waist measurement.","Walk 10 minutes after your biggest meal. Tiny and repeatable. A hallway counts.","Swap one sugary drink a day for tea, matcha, or sparkling water. Cheese and sushi stay.","Pick your “fun drink” ritual: the thing you make every morning that feels like a small ceremony."],
   "Car":["Save the CT DMV Driver’s Manual (free PDF at ct.gov/dmv) on your phone. One chapter a week, ten minutes at a time.","Take the free online Connecticut Work Zone Safety Course. It’s required for the permit and costs nothing.","Take one practice permit test just to see the format. The score doesn’t matter yet."],
   "Job & benefits":["Reapply for HUSKY Health at accesshealthct.com or by phone at 1-855-805-4325. Applications are accepted year-round. Do this first, this week.","Find last year’s income forms from your gig company (tax documents / 1099). Missing tax paperwork is what caused the lapse, so this is the root fix.","Write your “what I actually do” list: every task in your AI gig, in plain verbs. It becomes the résumé in December."],
   "Money":["Write down every dollar in and out for 30 days (use the Plan → Tracks page). Information, not judgment.","Name your first bucket: Permit, $59 total. Every gig payment tops it up first.","Look up IRS VITA sites near you: free tax-filing help for lower incomes."],
-  "Mind":["Use the three-light system on the Today page. Pick your light honestly each morning.","Read your “why” statements on the Plan → Map page once a week.","Choose one kind sentence to say when shame shows up (the Toolkit has scripts)."],
+  "Mind":["Use the three familiars on the Today page. Pick one honestly each morning, and nobody will argue.","Read your “why” statements on the Plan → Map page once a week.","Choose one kind sentence to say when shame shows up (the Toolkit has scripts)."],
   "Joy":["Weekly movie night, with no productivity attached.","Get a library card and install Libby: free books and audiobooks.","Adventure: walk somewhere you’ve never walked, with a tea in hand."]},
  rw:["$0: long bath, candle, a full album start to finish","~$5: a fancy matcha or loose-leaf tea you’ve been eyeing"],
  fic:"The Night Circus — Erin Morgenstern",non:"Tiny Habits — BJ Fogg",film:"Practical Magic",
  ms:["HUSKY application submitted","Tax / income documents located","Library card + Libby set up","Work Zone Safety course started","Baseline weigh-in logged","Used the Today page on 10+ days"],
- slip:"If November slides: do only the HUSKY application. Nothing else matters this month."},
+ slip:"If November slides: do the HUSKY application and nothing else. The Lady has been informed, and she’ll wait."},
 
 {id:"2026-12",lbl:"December 2026",ph:"Runway",gh:"candlelight",lost:0,
- line:"Build the floor you’ll stand on in January.",
+ line:"Build the floor you’ll stand on in January. I’d offer to help, but I’ve no hands worth the name.",
  f:["Walk 10–15 minutes most days; weigh in Dec 28 for your real baseline.","Finish the Work Zone course, pass practice tests, save the $59.","Résumé v1 and LinkedIn live; first quiet applications."],
  sec:{
   "Body":["Walk 10–15 minutes most days. If energy is low, split it into two 5s.","Add one produce serving to two meals a day (fruit, frozen veg, a salad kit).","Pick a lights-down time and protect it five nights a week. Low energy often starts with sleep.","Yoga: 5 minutes of floor stretching in the morning. YouTube is free."],
@@ -140,10 +154,10 @@ const M=[
  rw:["$0: a guilt-free day off after the new-year planning","~$5–10: a book from the thrift store"],
  fic:"Piranesi — Susanna Clarke",non:"The Gifts of Imperfection — Brené Brown",film:"Amélie",
  ms:["HUSKY active (or appeal / reapply in motion)","Résumé v1 + LinkedIn done","Permit appointment booked","$59 permit bucket funded","Baseline weight logged","PCP / therapy search started"],
- slip:"If December slides: protect three things only: HUSKY, the $59, and the appointment."},
+ slip:"If December slides: protect three things. HUSKY, the $59, and the appointment. Everything else can sulk."},
 
 {id:"2027-01",lbl:"January 2027",ph:"Unlock",gh:"begin",lost:5,
- line:"You don’t need a new you. You need a first week.",
+ line:"Book I begins. You don’t need a new you, you need a first week, and I’ll do the grumbling.",
  f:["Walk 20 minutes most days; strength twice a week (bodyweight).","Pass the permit test; log your first driving hours.","3 applications a week; first therapy intake."],
  sec:{
   "Body":["Walk 20 minutes most days. Consistency beats speed.","Strength twice a week, 15 minutes: sit-to-stands, counter push-ups, glute bridges, bird-dogs. Free beginner routines are plenty.","Add before you subtract: produce at every meal, a protein anchor at breakfast, fruit where you can see it. The 90/10 rule: 90% whole foods, 10% whatever you want.","Weigh in weekly (same day, same time, one number). The trend matters, not the day."],
@@ -155,10 +169,10 @@ const M=[
  rw:["$0: a full day of reading in bed, phone away","~$10: a thrift-store velvet or silk scarf in your palette"],
  fic:"The Cruel Prince — Holly Black",non:"Atomic Habits — James Clear",film:"The Holdovers",
  ms:["Permit passed","First 5 driving practice hours logged","12 applications sent","Therapy intake booked or done","PCP visit done","Weekly weigh-ins logged 3+ times"],
- slip:"If January slides: restart on the next Monday. Do the permit test and 3 applications this week, nothing else."},
+ slip:"If January slides: restart next Monday. The permit test and three applications this week, nothing else."},
 
 {id:"2027-02",lbl:"February 2027",ph:"Unlock",gh:"hearth",lost:10,
- line:"Keep the fire small and steady.",
+ line:"Keep the fire small and steady. The Fox approves, and the Fox approves of nothing.",
  f:["25–30 minute walks; add a second strength move each week.","Driving practice twice a week.","5 applications a week plus 2 networking messages."],
  sec:{
   "Body":["Walks to 25–30 minutes. Tack on one 10-minute walk after dinner if it’s feasible.","Strength twice a week with a little progression (one more rep, one slower tempo).","Meal anchor: a simple go-to breakfast and a go-to lunch so you’re not deciding at 2 p.m.","Dark-chocolate square after dinner is allowed. It’s part of the 10%."],
@@ -170,10 +184,10 @@ const M=[
  rw:["$0: a living-room dance-and-shower night","~$8: a plant or a candle for your space"],
  fic:"Circe — Madeline Miller",non:"Complex PTSD: From Surviving to Thriving — Pete Walker (read slowly; pause if it stirs things up)",film:"Portrait of a Lady on Fire",
  ms:["Weight −10 lbs (or on trend)","10+ driving hours logged","20 applications total","First interview scheduled or two networking replies","Therapy ongoing (4 sessions)"],
- slip:"If February slides: do 10-minute walks and applications on Tue/Thu only. Keep the trainer drives."},
+ slip:"If February slides: ten-minute walks, and applications on Tuesday and Thursday only. Keep the trainer drives."},
 
 {id:"2027-03",lbl:"March 2027",ph:"Unlock",gh:"thaw",lost:17,
- line:"Everything frozen starts to move.",
+ line:"Everything frozen starts to move. I can feel it in the lampshade.",
  f:["Build toward 6–7k steps most days.","Practice highways and parking with your trainer.","Interviews. Sign up with temp agencies as Plan B."],
  sec:{
   "Body":["Steps: build toward 6–7k most days. Park farther, pace on calls.","Strength twice a week, adding a hinge (hip-hinge with a backpack of books) and a row (a bag or band).","Cook one new plant-forward recipe a week. Salt, fat, acid, heat.","Yoga 10 minutes at least 4 mornings."],
@@ -185,10 +199,10 @@ const M=[
  rw:["$0: a bookstore afternoon without buying","~$15: something beautiful for your car-to-be (a mini air freshener, a cozy keychain)"],
  fic:"Uprooted — Naomi Novik",non:"Four Thousand Weeks — Oliver Burkeman",film:"Spirited Away",
  ms:["Weight −17 lbs (or on trend)","Parked and merged confidently","4+ interviews or screening calls","Temp agency profiles live","Taxes filed"],
- slip:"If March slides: remember the Q1 win condition is insurance, permit, résumé, therapy. Everything else is a bonus."},
+ slip:"If March slides: the Q1 win condition is insurance, permit, résumé, therapy. Everything else is a bonus."},
 
 {id:"2027-04",lbl:"April 2027",ph:"Momentum",gh:"motion",lost:24,
- line:"The permit clock runs out. The road opens.",
+ line:"The permit clock runs out and the road opens. Don’t dither at the kerb.",
  f:["7–8k steps; strength twice a week with progression.","Book the road test the moment 90 days are up.","Go for an offer: interview prep, follow-ups, negotiation."],
  sec:{
   "Body":["Steps toward 7–8k. Longer walks on weekends.","Strength twice a week, adding weight or reps.","Try one new vegetable a week. Keep sushi night."],
@@ -200,10 +214,10 @@ const M=[
  rw:["$0: a night of your favorite dark-academia film marathon","~$10: a flower bundle for your table"],
  fic:"The Secret History — Donna Tartt",non:"Designing Your Life — Bill Burnett & Dave Evans",film:"Crimson Peak",
  ms:["Weight −24 lbs (or on trend)","Road test booked","Final-round interview or offer","Benefits questions asked in writing","Car Fund auto-transfer started"],
- slip:"If April slides: book the road test and do three applications. Those two moves keep the machine running."},
+ slip:"If April slides: book the road test and send three applications. Those two keep the machine running."},
 
 {id:"2027-05",lbl:"May 2027",ph:"Momentum",gh:"bloom",lost:31,
- line:"Every door you knocked on starts to open.",
+ line:"Every door you knocked on starts to open. Try not to look surprised, it’s rude.",
  f:["8k steps; strength twice a week.","Pass the road test.","Sign an offer with benefits."],
  sec:{
   "Body":["Steps toward 8k. A weekend long walk of 45–60 minutes.","Strength twice a week; test a new move once a month.","Hydrate and eat before the road test. Stress plus an empty stomach is a recipe for jitters."],
@@ -215,10 +229,10 @@ const M=[
  rw:["$0: sunrise or sunset walk with a thermos","~$20: dinner out or sushi"],
  fic:"Rebecca — Daphne du Maurier",non:"I Will Teach You to Be Rich — Ramit Sethi",film:"Past Lives",
  ms:["Weight −31 lbs (or on trend)","Road test passed (or retest booked)","License issued","Offer accepted","Benefits enrolled"],
- slip:"If May slides: the only critical items are the road test and a job offer. Reschedule, don’t abandon."},
+ slip:"If May slides: the road test and a job offer are the only critical items. Reschedule, don’t abandon."},
 
 {id:"2027-06",lbl:"June 2027",ph:"Momentum",gh:"keys",lost:38,
- line:"Keys, paychecks, and a version of you that shows up.",
+ line:"Keys, paychecks, and a knight who turns up. I’d have found you a goat for this.",
  f:["8–10k steps; strength 3× a week if energy allows.","First solo drive somewhere beautiful.","Start the job strong; automate savings."],
  sec:{
   "Body":["Steps toward 8–10k; strength 2–3 times a week.","Yoga 15 minutes most mornings. It’s now a habit, not a task.","Do a monthly measure check-in: waist, how clothes fit, how stairs feel."],
@@ -230,10 +244,10 @@ const M=[
  rw:["$0: a full day outside","~$15: a new tote or notebook in your palette"],
  fic:"Stardust — Neil Gaiman",non:"How to ADHD — Jessica McCabe",film:"Lady Bird",
  ms:["Weight −38 lbs (or on trend)","First solo drive","Started job or in final-stage Plan B","Savings auto-transfer running","Car Fund goal set realistically"],
- slip:"If June slides: reread your why, take a candle day, and restart with one tiny task."},
+ slip:"If June slides: reread your why, take a Moth day, and restart with one tiny task."},
 
 {id:"2027-07",lbl:"July 2027",ph:"Wheels",gh:"wander",lost:45,
- line:"Get ready to choose your car with eyes open.",
+ line:"Choose the car with your eyes open. Rush it and the hedgehog gets the sardines.",
  f:["Steps 8–10k; lifts 3×/week.","Shop cars with a pre-approved budget and a mechanic.","First 60 days at work: reliability."],
  sec:{
   "Body":["Keep steps 8–10k and lifts 2–3×/week.","Summer food: fruit, grilled veggies, big salads. Keep the cheese.","Hydrate and protect your sleep window."],
@@ -248,7 +262,7 @@ const M=[
  slip:"If July slides: don’t buy a car under pressure. A rushed purchase costs more than waiting a month."},
 
 {id:"2027-08",lbl:"August 2027",ph:"Wheels",gh:"gold",lost:52,
- line:"The car you chose, the stickers you earned.",
+ line:"The car you chose, the stickers you earned. Put them on straight.",
  f:["Steps 10k; lifts 3×/week.","Buy the car (if the fund allows) and insure it.","Keep savings automatic."],
  sec:{
   "Body":["Reach 10k steps on at least half your days.","Strength 3×/week with real progress logged.","Celebrate non-scale wins: stairs, clothes, energy."],
@@ -260,13 +274,13 @@ const M=[
  rw:["$0: a sunrise drive","~$20: bumper stickers or car decor"],
  fic:"The Atlas Six — Olivie Blake",non:"Burnout — Emily & Amelia Nagoski",film:"Frida",
  ms:["Weight −52 lbs (or on trend)","Car purchased and insured (or plan B)","License + registration handled","Bumper stickers applied","First drive-to adventure"],
- slip:"If August slides: do not skip insurance. A paused purchase is fine; an uninsured one isn’t."},
+ slip:"If August slides: don’t skip insurance. A paused purchase is fine, an uninsured one isn’t."},
 
 {id:"2027-09",lbl:"September 2027",ph:"Wheels",gh:"kohl",lost:59,
- line:"The ordinary mornings become yours.",
+ line:"The ordinary mornings become yours. They take longer than you’d think.",
  f:["Steps 10k; lifts 3×/week.","Settle into the car and commute routine.","Lay down FIRE basics: automatic investing."],
  sec:{
-  "Body":["Keep steps and strength steady. Start a gentle fall plan: a walking route you love.","Slow cooker or sheet-pan meals for busy weekdays.","Dress in the palette you love. Clothes fit differently now."],
+  "Body":["Keep steps and strength steady. Pick a fall walking route you love.","Slow cooker or sheet-pan meals for busy weekdays.","Dress in the palette you love. Clothes fit differently now."],
   "Car":["Oil change schedule, tire pressure, a small emergency kit in the trunk.","Know your insurance policy and roadside coverage."],
   "Job & benefits":["Review your benefits and set contributions to get the full employer match if there is one.","Keep a “wins” document at work for performance reviews."],
   "Money":["Open a Roth IRA or equivalent if it fits your budget. A FIRE-style path starts with boring index funds. (Read The Simple Path to Wealth first.)","Savings fund for 2028 (apartment deposit + move + furnishings): set the number."],
@@ -275,10 +289,10 @@ const M=[
  rw:["$0: a leaf-peeping walk","~$12: a good candle for fall"],
  fic:"Mexican Gothic — Silvia Moreno-Garcia",non:"The Simple Path to Wealth — JL Collins",film:"Phantom Thread",
  ms:["Weight −59 lbs (or on trend)","Emergency kit and car maintenance plan","Investing account opened","2028 savings goal written down","One fall adventure done"],
- slip:"If September slides: keep auto-savings and gas in the tank. The rest is flexible."},
+ slip:"If September slides: keep auto-savings going and petrol in the tank. The rest is flexible."},
 
 {id:"2027-10",lbl:"October 2027",ph:"Harvest",gh:"fig",lost:66,
- line:"Whimsigoth season. Make something.",
+ line:"Whimsigoth season. Make something, and make it in good boots.",
  f:["Maintain steps and strength.","Write and submit one piece to a lit mag.","Draft your first video-essay outline (for fun, no pressure)."],
  sec:{
   "Body":["Keep the routines; add a Sunday long walk to forests or neighborhoods you love.","Hot tea and soups: easy fall nutrition.","Check how your body feels now: strength, energy, back and neck pain."],
@@ -293,7 +307,7 @@ const M=[
  slip:"If October slides: submit one piece and keep savings automatic. Creativity is a long game."},
 
 {id:"2027-11",lbl:"November 2027",ph:"Harvest",gh:"pomegranate",lost:73,
- line:"Gather the harvest. Plan the next door.",
+ line:"Gather the harvest and plan the next door. I’ll be moaning about the packing.",
  f:["Keep habits steady through the holidays.","Research apartments for 2028 (cost, neighborhoods).","Build the savings fund."],
  sec:{
   "Body":["Holiday plan: eat the good thing slowly, then walk. No punishment, no guilt.","Keep steps and strength. Sleep first."],
@@ -308,7 +322,7 @@ const M=[
  slip:"If November slides: protect sleep and savings. Everything else bends."},
 
 {id:"2027-12",lbl:"December 2027",ph:"Harvest",gh:"crown",lost:80,
- line:"You said you’d become someone else. You did.",
+ line:"End of Book I. You said you’d become someone else, and I watched you do it, which I’ll deny.",
  f:["Celebrate and measure.","Define maintenance mode.","Write the 2028 map."],
  sec:{
   "Body":["Measure, don’t judge: weight, waist, steps, strength, energy.","Define maintenance: a range you can live with, and the habits that hold it.","Photo recap: if it feels good, take one; if not, skip."],
@@ -320,15 +334,15 @@ const M=[
  rw:["$0: a letter from 2027-you to 2030-you","~$30: a nice dinner or something that marks the year"],
  fic:"Gideon the Ninth — Tamsyn Muir",non:"Braiding Sweetgrass — Robin Wall Kimmerer",film:"The Worst Person in the World",
  ms:["Weight −80 lbs (or best honest number)","Year review written","2028 targets set","Thank-you notes sent","Celebrated on purpose"],
- slip:"If you didn’t hit every number: look at the machine you built. Insurance, license, job, car, and habits are the real win."}
+ slip:"If you didn’t hit every number: look at the machine you built. Insurance, license, job, car and habits are the real win."}
 ];
 
 const YEARS=[
- {y:"2027",t:"Unlock",big:"I",items:[["Lose weight","−80 lbs by Dec, ~1.5 lbs a week on average. Your doctor’s guidance outranks any number I give you."],["Get a car","Permit → license → insurance quotes → buy. Honest budget, no shortcuts."],["Get a good job with benefits","Insurance, income, taxes, independence."]],
+ {y:"2027",t:"Book I · The Trial",big:"I",items:[["The Iron and the Long Walk (weight)","−80 lbs by December, about 1.5 lbs a week on average. Strength, walking and mobility are the point. Your doctor’s guidance outranks any number, mine included."],["The Wheels (car)","Permit, license, insurance quotes, buy. Honest budget, no shortcuts."],["The Posting (a good job with benefits)","Insurance, income, taxes, independence."]],
   why:{"Weight":["confidence","privilege","health","mobility","strength","ability","easier","quality of life"],"Car":["mobility","freedom","agency","security","easier","bumper stickers","normative","come and go without waiting on anyone’s schedule"],"Job":["money","insurance","freedom","security","taxes","fund the lifestyle","independence","agency","normative"]}},
- {y:"2028",t:"Root",big:"II",items:[["Savings fund","The cushion that makes everything else possible."],["Move into and furnish your own apartment","Persian rugs, velvet, a door you control."],["Solo trip","The first of many."]]},
- {y:"2029",t:"Expand",big:"III",items:[["Move to Rochester, Buffalo, Chicago, or Boston","Researching starts in Nov 2027."],["Start / progress the YouTube channel","Thinkpiece-through-a-sociological-lens era."],["Secure a date for New Year’s","Let love be an invitation, not a project."]]},
- {y:"2030",t:"The north star",big:"IV",items:[["The north star self","A maker of meaning. Free. Joyful. Curse-breaker."]]}
+ {y:"2028",t:"Book II · The Road",big:"II",items:[["The Hoard (savings fund)","The cushion that makes everything else possible."],["The Keep (your own apartment)","Persian rugs, velvet, a door you control. Furnish it slowly, and pick the lampshade with care."],["The Far Shore (a solo trip)","The first of many. I’ll moan about the packing."]]},
+ {y:"2029",t:"Book III · The Crossing",big:"III",items:[["The Border (move to Rochester, Buffalo, Chicago or Boston)","Research starts in November 2027. Calbert lays out the options and takes no side."],["The Scrying Glass (the YouTube channel)","Thinkpieces through a sociological lens."],["The Invitation (a date for New Year’s)","An invitation, not a project."]]},
+ {y:"2030",t:"Book IV · The Coronation",big:"IV",items:[["The north star self","A maker of meaning. Free. Joyful. A curse-breaker. Calbert would like you to write this year’s three Great Quests yourself, and he’ll complain about whichever you choose."]]}
 ];
 
 const CAR_STEPS=["Work Zone Safety course done","Practice tests scoring 22+/25","DMV hub appointment booked","Permit passed ($59)","90 days held (mark the date in Notes)","Road test booked","License issued ($84)","Insurance quotes gathered","Car Fund goal set","Car purchased","Bumper stickers applied"];
@@ -339,10 +353,29 @@ const BUCKETS=[["permit","Permit",59],["license","License",84],["emergency","Eme
 const PALETTE=[["#0f0a09","black"],["#2b1a15","espresso"],["#3a2118","chocolate"],["#5a1520","oxblood"],["#722f37","wine"],["#6a1b3a","burgundy"],["#4b2a54","plum"],["#5b3a5a","fig"],["#173f45","deep teal"],["#43a59a","verdigris"],["#3e3f6b","indigo"],["#5a6030","olive"],["#c9ad7f","champagne"],["#ece0cc","cream"],["#b97a2b","amber"],["#a6491f","rust"],["#8d3a2a","brick"],["#c99a98","dusty rose"],["#e5b5aa","blush"],["#b8924a","gold"]];
 
 const TOOLKIT={
- reset:["<b>Missed a day:</b> do a candle day tomorrow. Nothing to make up.","<b>Missed three days:</b> pick ONE ritual (the warm cup, a stretch, or a walk) and one two-minute task. Do both before noon. Write the date in your journal and keep going.","<b>Missed a week:</b> skip the guilt scan. Open Today, pick candle, tick one box. Then book the next real appointment on your calendar.","<b>Missed a month:</b> you didn’t fail the plan; the plan just paused. Return to the Runway steps (HUSKY, $59, appointment, résumé), whichever isn’t done. Rebuild from there.","<b>Ever-present rule:</b> never zero twice."],
- proc:["<b>Two-minute door:</b> open the thing, don’t do the thing. The brain relaxes when it’s a door, not a mountain.","<b>Body double:</b> work next to a person, or a “study with me” video on a laptop. Free and surprisingly strong.","<b>Timer sprints:</b> 10 minutes on, 5 off. Stop when the timer stops, even if you’re on a roll (the stopping is what makes tomorrow easier).","<b>Make it physical:</b> stand up, put the phone in another room, set one object on your desk that belongs to the task.","<b>Name the first micro-action:</b> not “do résumé” but “open the doc and type my name”.","<b>Pair it:</b> tea + task, playlist + task, candle + task. Pairing builds the habit rails.","<b>Reduce decisions:</b> pre-pick tomorrow’s three needle-movers at night. Decision-making is the hard part.","<b>The three-day rule:</b> anything undone for 3 days gets reduced to 2 minutes and done, or deleted on purpose."],
- candle:["Drink water and something warm","Wash your face","Lie on the floor for 5 minutes with a podcast or music","Open one tab and close all the others","Put one thing back where it belongs","Text one person a heart","Walk to the mailbox or the end of the street","Eat a piece of fruit","Stretch your neck and shoulders","Open your HUSKY or DMV page, just look","Wear the soft thing","Do the night skincare ritual early, then rest"],
- shame:["<b>Notice:</b> “There’s shame.” Name it. You’ve already stepped one inch back.","<b>Check the story:</b> is this fact, or an old voice? Write one fact and one feeling.","<b>Speak to yourself like a friend:</b> what would you say to someone you love in this exact spot?","<b>One tiny act of repair:</b> not a punishment; a step. Wash a cup. Send the email.","<b>Afterwards:</b> write one line about what helped. Your future self will want it."],
+ reset:[
+  "<b>Missed a day:</b> do a Moth day tomorrow. Nothing to make up.",
+  "<b>Missed three days:</b> pick ONE ritual (the warm cup, a stretch, or a walk) and one two-minute task. Do both before noon. Write the date in your journal and carry on. I’ve watched worse come back from further.",
+  "<b>Missed a week:</b> skip the guilt scan. Open Today, pick the Moth, tick one box. Then book the next real appointment on your calendar.",
+  "<b>Missed a month:</b> the plan paused. Nothing failed. Go back to the Prologue steps (HUSKY, $59, appointment, résumé), whichever isn’t done, and rebuild from there.",
+  "<b>Ever-present rule:</b> never zero twice."],
+ proc:[
+  "<b>Two-minute door:</b> open the thing, don’t do the thing. The brain relaxes when it’s a door and not a mountain.",
+  "<b>Body double:</b> work next to a person, or a “study with me” video on a laptop. Free and surprisingly strong. It’s what the familiar is for.",
+  "<b>Timer sprints:</b> 10 minutes on, 5 off. Stop when the timer stops, even if you’re on a roll. The stopping is what makes tomorrow easier.",
+  "<b>Make it physical:</b> stand up, put the phone in another room, set one object on the desk that belongs to the task.",
+  "<b>Name the first micro-action:</b> not “do résumé” but “open the doc and type my name”.",
+  "<b>Pair it:</b> tea + task, playlist + task, candle + task. Pairing builds the rails.",
+  "<b>Reduce decisions:</b> pick tomorrow’s three errands tonight. Deciding is the hard part.",
+  "<b>The three-day rule:</b> anything undone for 3 days gets cut to 2 minutes and done, or deleted on purpose. The dead pigeon is a case study."],
+ candle:[
+  "Drink water and something warm","Wash your face","Lie on the floor for 5 minutes with a podcast or music","Open one tab and close all the others","Put one thing back where it belongs","Text one person a heart","Walk to the mailbox or the end of the street","Eat a piece of fruit","Stretch your neck and shoulders","Open your HUSKY or DMV page, just look","Put on the comfortable thing","Do the night skincare ritual early, then rest"],
+ shame:[
+  "<b>Notice:</b> “There’s shame.” Name it. You’ve already stepped one inch back.",
+  "<b>Check the story:</b> fact, or an old voice? Write one fact and one feeling.",
+  "<b>Speak to yourself like a friend:</b> what would you say to someone you love in this exact spot?",
+  "<b>One small repair:</b> not a punishment, a step. Wash a cup. Send the email.",
+  "<b>Afterwards:</b> write one line about what helped. Future you will want it."],
  planb:[["Weight",["B: walking + produce only (drop strength for a month)","C: just the evening walk and the sleep window","Ask the doctor about nutrition support (a registered dietitian) under your coverage"]],["Car",["B: buy a cheaper, older car; or be added to a family policy","C: hold the permit, practice, and use transit/ride shares until the fund catches up","If the road test goes badly: the retest fee is $40; book a lesson, re-book"]],["Job",["B: temp agency, state job, or retail/warehouse with benefits","C: keep the AI gig plus a part-time benefit-eligible job","Anything that carries insurance counts as a stepping stone"]]],
  reward:["<b>$0:</b> a bath, a long walk with a playlist, a day with no inbox, a favorite chapter, calling a friend, sunrise at a window","<b>$5–10:</b> a fancy tea, a thrifted book or scarf, a candle, a flower, a café matcha","<b>$20+:</b> dinner out, sushi, a book haul, a new palette piece for your closet","<b>Rule:</b> reward showing up; never reward or punish with skipped meals or starving, and never reward yourself with something that undermines the goal."],
  resources:["<b>HUSKY / Access Health CT:</b> accesshealthct.com or 1-855-805-4325 (applications year-round)","<b>CT DMV:</b> ct.gov/dmv. Driver’s Manual PDF, Work Zone Safety course, appointment scheduling","<b>Your library:</b> a card gives you Libby, Hoopla, free events, and quiet places to work","<b>VITA:</b> free tax-filing help for lower incomes (IRS.gov)","<b>2-1-1 Connecticut:</b> dial 211 for food, utilities, and local benefit help","<b>YouTube:</b> yoga with Adriene, beginner strength, “study with me” rooms","<b>ctbhp.com:</b> finding behavioral-health providers under HUSKY","<b>Community health centers (FQHCs):</b> sliding-scale care and help with applications","<b>SNAP/food help:</b> check eligibility at connect.ct.gov if food budget is tight"],
