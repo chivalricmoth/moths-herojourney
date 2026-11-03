@@ -81,7 +81,7 @@ async function setAvatar(file){
 function afterImagesPulled(){hydrateImgs(document)}
 
 /* ---------- the one card builder: id, title, icon, body ---------- */
-const MUP=["today","week, month"],WS=[1,2,3,4,6],DWM={3:2,4:2,5:3,6:3,7:4,8:4,9:4,12:6}; 
+const MUP=["today","week","month"],WS=[1,2,3,4,6],DWM={3:2,4:2,5:3,6:3,7:4,8:4,9:4,12:6}; 
 const folded=id=>!!(LS.fold&&LS.fold[id]);
 const LAY=pg=>{const l=(st.notes||{}).layout,p=l&&l[pg];return p&&typeof p==="object"?p:{o:[],w:{}}};
 function mu(pg,arr){
