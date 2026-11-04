@@ -529,3 +529,71 @@ const SYL=SYL_RAW.split("\n").map(l=>{const p=l.split("|");return{id:p[0],f:p[1]
 const SYL_WHY={"2026-11": "Rage as research. Kuang for the teeth; take notes.", "2026-12": "Tartt for the elegance: beautiful, slightly doomed people, by candlelight.", "2027-02": "Charming, dangerous geniuses.", "2027-04": "Grad-school magic, and the start of the strange spring.", "2027-05": "The book on finishing the stress cycle.", "2027-08": "Moors and mess.", "2027-11": "Witches who come through it.", "2028-01": "Boring index-fund calm.", "2028-03": "The cook’s guide to loving the world.", "2029-12": "Patti Smith for the New York you’ll walk through."};
 const RECS={};
 SYL.forEach(s=>{RECS[s.id]={fic:s.f,non:s.nf,film:s.films,listen:s.albums,why:SYL_WHY[s.id]||""}});
+
+/* Calbert reads the room: line pools for calLine() in app.js, keyed by trigger */
+const CAL_CTX={
+ sleep:["Under six hours. You look like something the tide left behind. Drink water, eat something with a crust, and attempt nothing grand until you've stopped squinting.",
+"Short night, then. I could tell from the way you came in, all elbows and sighing. The Lady asks nothing of the exhausted except that they stay upright. I'd call that a generous contract.",
+"Barely a night's sleep to your name. Dreadful. I've seen candles with more sense. Do the smallest quest on the board and let the rest gather dust where it belongs.",
+"You've been robbed of a night, knight, and no one will hang for it. Go easy on the day. Be gentle with it and it may be gentle back. Or it won't, and we'll both be cross.", "Under six hours. Hmph. Nothing is asked of you today but the warm cup, and I’ll hold the lampshade steady.","You slept like a moth in a draught. Go gently. Water, a walk, bed early. That’s the whole sermon.","Short night, I can tell. [dims himself a little] Today’s only job is not making it worse."],
+ steps:["Your feet were idle yesterday. The step count sits there accusing no one, though I've half a mind to. Take a walk. Round the block will do. Pretend there's a mystery at the end of it.",
+"Short of your steps. A pity. I flap about this lamp all night and still cover a respectable distance. Out of the door, knight. The pavement's been lonely.",
+"Yesterday your legs did the bare minimum. Give them an errand today: a lap of the park, the long way to the shop. They'll thank you in their own sullen fashion.",
+"Your boots sat by the door all day yesterday, and they're getting ideas about their own importance. Put them on. Remind them who's in charge."
+,"Yesterday fell short of the step goal. Don’t fret. Put your shoes by the door and let the door do the persuading.","Few steps yesterday. A lap round the block today and we’ll call it even, the Lady and I.","The step count was low. Hmph. Not a crime. Even the hedgehog manages a loop at dusk."],
+ hare:["The Hare, is it? Quick feet and a wild eye. Go on, then. I'll sit here with the stopwatch and my low expectations, and we'll see which of us is proved wrong.",
+"A Hare day. All that velocity, and for what? Fine. Sharpen your pencils, knight, and run the course. Mind the ditches.",
+"You've chosen the Hare. I can feel the draught from here. Loud, fast, a little ridiculous. Go and make a spectacle of yourself. I'll bring the bandages.",
+"The Hare. Of course. You couldn't pick the tortoise like a person with sense. Off you go, then, ears flat, and try to finish more than you start."
+,"A Hare day. Fine. I’ll have the sardines ready for after.","You picked the Hare. Bold. Sharp pencils, short sprints, and drink something in between.","The Hare’s out of the box today. Run if you must, but I’ll be watching the clock."],
+ period:["First day, and the blood has arrived. Hot water bottle, thick socks, the dullest film you own. The quests will keep. They've kept for centuries.",
+"Ah. The moon's taken her tithe again. Today the only thing on the schedule is staying warm. I'll hold the fort and grumble about it so you needn't.",
+"Day one, morning star. Heat, tea, something with iron in it. You owe the world nothing until tomorrow, and I'll swear to that before the Lady if I have to.",
+"I've no womb and no great gift for sympathy, but I've a fine view of how it goes. Blanket. Bottle. Quiet. Take the day off from being formidable."
+,"First day. Blanket, hot water bottle, low expectations. The Moth would approve.","Day one. The drawer’s open if you need it. Everything else can wait.","Here we go again, then. [tucks a blanket round the lamp] Be kind to her today."],
+ errand:["One of the Lady's errands, crossed off. She'll hear of it. She won't say a word, she never does, but the candles will burn a shade brighter, and I intend to take that as praise.",
+"An errand done. The ledger's been updated in my appalling handwriting. One more thing that was going to fester, and didn't.",
+"She asked, you went, and it's finished. I've watched knights take whole seasons to manage that. Don't let it swell your head. Have a biscuit and sit down.",
+"Another errand off the list. The Lady's been told, possibly with some embellishment on my part. I'm a messenger. Embellishing is most of the job."
+,"An errand for the Lady, ticked off. She’ll pretend not to be pleased. I’ll tell you she is.","One errand down. That’s a step closer to the Lady’s good books.","Ticked off an errand, did you? Hmph. Competence. Carry on."],
+ nojournal:["The journal's been shut for days. I looked in on it earlier. Cobwebs, one confused spider. Give it a line, knight. Complaints are traditional.",
+"Not a word on the page in days. The ink's drying in the well and I'm too old to watch it happen. Write anything. Tell it what the day tasted like.",
+"Your journal's gone very quiet. I only mention it because the silence is giving me a headache. One line. It needn't be good. Most of mine aren't, and I've had centuries.",
+"It's been days since you confided in the book, and it's started to sulk. Put it out of its misery. Two words will do, and one of them can be rude."
+,"Three days without a word in the journal. The pages are getting dusty. One line will do.","No journal for a few days. I’m not nagging. [nags slightly] One line. A sentence. A word.","The journal’s been quiet. Tell it anything. It keeps secrets better than I do."],
+ weighin:["The scale, after all this time. Brave, or bored. It's a number, and the Lady has never once asked to see it. Log it and walk away.",
+"You've stood on the thing at last. Write the figure down and let it be the dull fact it is. It can't tell a story. That's my department.",
+"First weigh-in in an age. The scale is a tin liar with a good memory, and neither quality makes it your master. Log it. Go and be interesting at something else.",
+"A number's been recorded after a long and sullen silence. Good. The ledger likes data the way a dragon likes gold, without discrimination. Don't read into it. Come along."
+,"First weigh-in in a good while. A number is only a number, and the Lady doesn’t grade it.","You stepped on the scale after all that time away. Brave. Noted, filed, not judged.","The scale again, after a long gap. It’s data, not a verdict. Hmph."],
+ comeback:["Oh, you're back. I kept the lamp lit. I didn't count the days, and I'd thank you not to ask what number I landed on. No lecture. Pick the nearest quest.",
+"Well, look what the cat declined to drag in. The lamp's still warm and nobody has mentioned your absence, least of all me. Start small. Smaller than that.",
+"There you are. I've spent the interval talking to the wallpaper, which is a poor conversationalist. Sit. Don't explain. Begin anywhere you like.",
+"The knight returns, a little rusty, a bit dented. A shiny knight never won anything. The road's where you left it. So am I."
+,"Look who’s back. I kept the bulb warm. No questions, no lectures.","You’re back. I didn’t count the days. [counted the days] Start small.","Well. There you are. The lamp stayed lit. Begin anywhere."],
+ rituals:["Every ritual done. I went through the list twice, hunting for a loose thread, and found none. Deeply irritating. I had planned to be disappointed in you today.",
+"A clean sweep of the rituals. The Lady's been told. She smiled, I think. Hard to say in this light, and I wasn't looking.",
+"All of them ticked, morning star. I've nothing to complain about, and I find I don't care for the sensation. Go and sit in a patch of sun before I get used to it.",
+"The rituals are finished, every one. A lesser moth would say something sentimental. I'll nod once, curtly, and look away."
+,"Every ritual done. I’d say something clever but I’m too busy being proud. Hmph.","All the rituals, ticked. The Lady will hear of this.","A clean sweep of the rituals. Sit down. Have a sardine."],
+ morning:["Morning. The sun's up, the light is offensive, and the kettle's the only honest thing in the house. Drink something warm before you start on the world.",
+"You're awake. Fine. I've been up since the moths in the walls started their gossip. Water first, then breakfast, then quests. In that order, knight.",
+"Good morning, morning star. The name's a bit of a joke at this hour, you'll admit. Tea. Then we'll see what the day has in its pockets.",
+"Dawn's gone and made an effort again. Show it some courtesy. Open a window, let the cold in, and tell me what you mean to do with the next twelve hours."
+,"Morning. The bulb’s warming up and so am I. Something warm in a cup first.","Good morning. Nothing is urgent before the first sip.","Up, are we? Hmph. Good. Gently now."],
+ afternoon:["Afternoon. The slump hour, when the light goes the color of weak tea and everything feels like wading. Eat something. Look out of a window. The quests can wait ten minutes.",
+"Middle of the day and the list is half eaten. Good sign or bad, depending on who you ask, and I won't be asked. One more thing, knight, then you may collapse.",
+"The sun's tipped over the top and started down the far side. Drink some water. Stretch like a cat that's been insulted. Pick the smallest task left and finish it.",
+"It's afternoon, the hour when sensible people have a biscuit and a sit. Do that. Then get back to it."
+,"Afternoon. The slump hour. Water, a window, five minutes of nothing.","Middle of the day. Check in with your body before you check anything else.","Afternoon light. A good time to do one small thing and call it plenty."],
+ evening:["Evening. The light's thinning and the lamp's coming into its own. Close the loops you can, leave the rest in the drawer. I'm told the dark is for resting. As a moth, I've never managed it.",
+"The day's going out like a tide. Tell me how it went. Honestly, now. I'll have my say after, and I'll try not to enjoy it.",
+"Evening, knight. Put the armor somewhere it won't clatter. One true line in the journal before the night starts nibbling at it.",
+"The windows have gone blue. Wind down, wash up, put something soft on. I'll sit on the shade and watch the dark arrive like a bad relative."
+,"Evening. Close the loops you can, leave the rest for the drawer.","The light’s going. Soft lamps, soft thoughts. How was it, really?","Evening, then. Write one true line before the screen eats the night."],
+ witching:["Past midnight. Nothing sensible has ever happened at this hour, and I'd know, I've been up for most of it. Bed, knight. The Lady will keep until breakfast.",
+"Still up, and I'm the nocturnal one. Even I find that alarming. Whatever it is will look smaller in daylight. Everything does, apart from the bills.",
+"The witching hour, and you're hunched over a screen like a gargoyle with a tax return. Go to sleep. The quests aren't going anywhere. They're old and patient, unlike me.",
+"It's the small hours, morning star, and nothing you decide now will be right. Put the lamp out. I'll keep watch, grumbling, as is my custom."
+,"The witching hour. Nothing good is written at this time. Go to bed; the Lady will be here at breakfast.","Past midnight. Even the hedgehog’s asleep. Off you go.","Still up? Hmph. I’ll keep the lamp low. Go to sleep soon."]
+};
