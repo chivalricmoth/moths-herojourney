@@ -623,31 +623,99 @@ html.focus .line{display:none}
 @media(max-width:560px){.mood{column-width:140px}}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
-/* ===== SIDEBAR v4 + CALBERT SPRITE ===== */
-.rail{background:var(--surf);-webkit-backdrop-filter:none;backdrop-filter:none;border-right:1px solid var(--t15);padding:16px 12px 12px;gap:0}
-.rhead{min-height:56px;margin:0 0 10px;padding-bottom:12px;border-bottom:1px solid var(--t08);gap:12px}
-.rail .av{width:40px;height:40px;margin:0 2px;border-radius:50%;outline:0;overflow:hidden;background:var(--surf2);border:1px solid var(--t30)}
+/* ============================================================
+   SIDEBAR v5
+  
+   ============================================================ */
+:root{--rail:72px;--railW:252px;--ic:42px}
+
+/* ---------- the rail: a tall window, same language as the cards ---------- */
+.rail{padding:0 14px 12px;gap:0;border:0;background:var(--surf);isolation:isolate;
+  box-shadow:1px 0 0 var(--t30),4px 0 0 var(--a2)}
+html:not(.pinned) .rail:is(:hover,:focus-within){
+  box-shadow:1px 0 0 var(--t30),4px 0 0 var(--a2),18px 0 40px -10px hsl(250 20% 8%/.35)}
+
+/* accent glow, like .glow on the cards */
+.rail::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+   radial-gradient(150% 36% at 0% 0%,var(--a2),transparent 70%),
+   radial-gradient(150% 30% at 100% 100%,var(--a1),transparent 70%)}
+
+/* faint vertical script wordmark in the dead space (expanded only) — delete this rule to remove */
+.rail::after{content:"north star";position:absolute;z-index:-1;right:-2px;bottom:104px;
+  writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;
+  font:100 4.6rem/1 var(--script);color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s}
+html.pinned .rail::after,.rail:hover::after,.rail:focus-within::after{opacity:.09}
+
+/* ---------- title bar with working lights (pin · accent · light/dark) ---------- */
+.rail .rbar{flex:none;display:flex;align-items:center;height:40px;margin:0 -14px;padding:0 12px;
+  border-bottom:1px solid var(--t30);
+  background:linear-gradient(180deg,var(--a1),transparent),var(--surf2)}
+.rail .rbar .lights{gap:6px}
+.rail .rbar .lt::before{inset:-7px -3px}
+.lt-pin{--c:var(--fold)}
+.lt-acc{--c:var(--acc)}
+.lt-thm{background:linear-gradient(90deg,var(--text) 50%,var(--bg) 50%)}
+.lt.on{--c:var(--acc);box-shadow:0 0 9px var(--acc)}
+
+/* ---------- header ---------- */
+.rail .rhd{display:grid;grid-template-columns:var(--ic) minmax(0,1fr);align-items:center;
+  padding:12px 0 10px;border-bottom:1px dashed var(--t15)}
+.rail .rav{display:grid;place-items:center;height:var(--ic);text-decoration:none}
+.rail .av{width:34px;height:34px;margin:0;border-radius:50%;overflow:hidden;background:var(--surf2);
+  border:1px solid var(--t30);outline:1px solid var(--a3);outline-offset:3px}
 .rail .av::before{display:none}
 .rail .av img{filter:none;object-fit:cover;object-position:center}
-.rail .wordmark{font-size:1.9rem}
-.rhead .who small{font:400 .66rem var(--mono);letter-spacing:.06em;color:var(--t55)}
+.rail .av>i{font-size:1.1rem}
+.rail .who{min-width:0;padding-left:10px;display:flex;flex-direction:column}
+.rail .wordmark{font-size:1.75rem;line-height:1.1;padding:0}
+.rail .who small{margin-top:1px;font:400 .6rem/1.3 var(--mono);letter-spacing:.04em;color:var(--t55);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.rnav{gap:2px}
-.rnav a,.rq button,.rfoot button{height:40px;padding:0 11px;border-radius:10px;font-size:.86rem;font-weight:600;color:var(--t75);gap:14px}
-.rnav a i,.rq button i,.rfoot button i{font-size:1.3rem;width:22px;color:var(--t55);transition:color var(--ease)}
-.rnav a:hover,.rq button:hover,.rfoot button:hover{background:var(--t08);color:var(--text)}
-.rnav a:hover i,.rq button:hover i,.rfoot button:hover i{color:var(--text)}
-.rnav a.on,.rq button.on{background:var(--a2);color:var(--text);box-shadow:none}
-.rnav a.on i,.rq button.on i{color:var(--accT)}
-.rnav a.on::before{left:-12px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0}
+/* ---------- section labels (hairline only when collapsed) ---------- */
+.rail .rlab{display:flex;align-items:center;gap:8px;height:30px;margin-top:6px;padding:0 2px;
+  font:400 .56rem var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--t55)}
+.rail .rlab::after{content:"";flex:1;height:1px;background:var(--t15)}
+.rail .rlab .lb{max-width:0;overflow:hidden}
+html.pinned .rail .rlab .lb,.rail:hover .rlab .lb,.rail:focus-within .rlab .lb{max-width:120px}
+.rail .rgrp{display:flex;flex-direction:column;gap:2px}
 
-.rsep{margin:10px 8px;background:var(--t08)}
-.rprog{padding:6px 8px;border-radius:10px;background:none;border:0}
-.rprog:hover{background:var(--t08)}
-.rfoot{margin-top:auto;padding-top:10px;border-top:1px solid var(--t08)}
-.syncline{height:28px;padding:0 11px;font:400 .68rem var(--mono);letter-spacing:.04em;color:var(--t55)}
-.rail:hover:not(.pin),.rail:focus-within:not(.pin){box-shadow:var(--shadow)}
+/* ---------- rows ---------- */
+.rail .rr{position:relative;display:grid;grid-template-columns:var(--ic) minmax(0,1fr);align-items:center;
+  width:100%;height:44px;margin:0;padding:0;border:1px solid transparent;border-radius:4px;background:transparent;
+  color:var(--t75);font:600 .86rem/1 var(--sans);letter-spacing:.01em;text-align:left;text-decoration:none;cursor:pointer;
+  transition:background var(--ease),border-color var(--ease),color var(--ease),box-shadow var(--ease)}
+.rail .rr .ic{display:grid;place-items:center}
+.rail .rr .ic i{font-size:1.35rem;color:var(--t55);transition:color var(--ease)}
+.rail .rr .lb{padding-right:10px;overflow:hidden;text-overflow:ellipsis}
+.rail .rr:hover{background:var(--t08);border-color:var(--t15);color:var(--text)}
+.rail .rr:hover .ic i{color:var(--text)}
+.rail .rr.on{background:var(--a2);border-color:var(--a3);color:var(--text);box-shadow:2px 2px 0 var(--a2)}
+.rail .rr.on .ic i{color:var(--accT)}
+.rail .rr.on::before{content:"";position:absolute;left:-15px;top:9px;bottom:9px;width:3px;
+  border-radius:0 2px 2px 0;background:var(--acc);box-shadow:0 0 10px var(--acc)}
+.rail .rr:focus-visible{outline:2px solid var(--accT);outline-offset:-2px}
 
+/* today module: ring + serif-italic label */
+.rail .rr.rpg{height:54px;margin-top:6px}
+.rail .ring{width:36px;height:36px}
+.rail .ring b{width:28px;height:28px;font-size:.62rem;background:var(--surf)}
+.rail .rpg .t{display:block;font:italic 500 1.15rem/1.05 var(--serif);text-transform:lowercase;color:var(--text)}
+.rail .rpg .t small{display:block;margin-top:3px;font:400 .6rem var(--mono);letter-spacing:.04em;
+  text-transform:none;color:var(--t55)}
+
+/* ---------- footer ---------- */
+.rail .rfoot{margin-top:auto;padding-top:8px;border-top:1px dashed var(--t15);display:flex;flex-direction:column;gap:2px}
+.rail .rr.ro{height:30px;pointer-events:none;cursor:default;font:400 .62rem var(--mono);letter-spacing:.04em;color:var(--t55)}
+.rail .syncdot{width:8px;height:8px;margin:0}
+.rail .syncdot.busy{animation:railpulse 1.1s ease-in-out infinite}
+@keyframes railpulse{50%{opacity:.3}}
+
+/* short windows */
+@media(max-height:640px){
+  .rail .rr{height:38px}.rail .rr.rpg{height:46px}
+  .rail .rhd{padding:8px 0}.rail .rlab{height:24px;margin-top:2px}
+}
 @media(hover:none){#grain{display:none}}
 
 /* ===== icons: Phosphor shapes as masks (rebuild with docs/build-icons.py) ===== */
