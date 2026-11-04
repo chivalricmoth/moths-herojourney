@@ -1180,7 +1180,7 @@ const ico=(n,f)=>`<i class="ph${f?"-fill":""} ph-${n}"></i>`;
 const pinned=()=>!!LS.pinned;
 
 function chrome(){
-  const r=R(),nm=(st.settings.name||"").trim(),mo=monthNear(todayKey()),ss=starStats();
+  const r=R(),mo=monthNear(todayKey()),ss=starStats();
   const dpar=dayParts(todayKey()),dp=Math.round(dpar.filter(Boolean).length/dpar.length*100);
   document.documentElement.classList.toggle("pinned",pinned());
   document.documentElement.classList.toggle("focus",!!LS.focus&&r.name==="today");
@@ -1189,12 +1189,16 @@ function chrome(){
   const nav=NAVS.map(([k,l,ic])=>{const on=r.name===k;
     return `<a href="#${k}" class="rr ${on?"on":""}" title="${l}" ${on?'aria-current="page"':""}><span class="ic">${ico(ic,on)}</span><span class="lb">${l}</span></a>`}).join("");
   const pinL=pinned()?"Unpin sidebar":"Pin sidebar open";
+  const th=document.documentElement.dataset.theme||"dark",hs=HOUSES.find(h=>h[0]===LS.house)||HOUSES[0];
+  const row=o=>`<button class="rr ${o.on?"on":""}" data-act="${o.act}" title="${o.t}" aria-label="${o.t}" ${o.pr!=null?`aria-pressed="${o.pr}"`:""} ${o.x||""}><span class="ic">${o.ic}</span><span class="lb">${o.l}${o.s?`<small>${o.s}</small>`:""}</span></button>`;
+  const tools=[
+    row({act:"focus",t:"Focus mode (Today)",l:"Focus mode",ic:ico("crosshair",!!LS.focus),on:!!LS.focus,pr:!!LS.focus}),
+    row({act:"pin",t:pinL,l:"Pin sidebar",ic:ico(pinned()?"push-pin":"push-pin-slash",pinned()),on:pinned(),pr:pinned()}),
+    row({act:"accent",t:"Accent colour",l:"Accent",s:`<span class="accLb">${esc(hs[1])}</span>`,ic:`<span class="aic">${ico("palette")}<span class="adot"></span></span>`,x:'aria-haspopup="true" aria-expanded="false"'}),
+    row({act:"toggleTheme",t:"Light or dark",l:"Theme",s:`<span class="themeLb">${th==="dark"?"Dark":"Light"}</span>`,ic:'<span class="tg"></span>'})
+  ].join("");
+  closeFly();
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
-   <div class="rbar"><span class="lights">
-     <button class="lt lt-pin ${pinned()?"on":""}" data-act="pin" data-g="${pinned()?"↤":"↦"}" aria-pressed="${pinned()}" aria-label="${pinL}" title="${pinL}"></button>
-     <button class="lt lt-acc" data-act="cycleHouse" data-g="✦" aria-label="Next accent colour" title="Accent colour"></button>
-     <button class="lt lt-thm" data-act="toggleTheme" aria-label="Light or dark" title="Light / dark"></button>
-   </span></div>
    <div class="rhd">
      <a class="rav" href="#settings" title="Profile and settings" aria-label="Profile and settings">${avatarHtml()}</a>
      <div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div>
@@ -1203,7 +1207,7 @@ function chrome(){
    <div class="rlab"><span class="lb">the road</span></div>
    <div class="rgrp">${nav}</div>
    <div class="rlab"><span class="lb">tools</span></div>
-   <div class="rgrp"><button class="rr ${LS.focus?"on":""}" data-act="focus" title="Focus mode (Today)"><span class="ic">${ico("crosshair",!!LS.focus)}</span><span class="lb">Focus mode</span></button></div>
+   <div class="rgrp">${tools}</div>
    <div class="rfoot">
      <div class="rr ro"><span class="ic"><span class="syncdot"></span></span><span class="lb syncstat"></span></div>
      <a href="#settings" class="rr ${r.name==="settings"?"on":""}" title="Settings"><span class="ic">${ico("gear-six",r.name==="settings")}</span><span class="lb">Settings</span></a>
