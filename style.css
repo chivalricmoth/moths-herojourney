@@ -696,16 +696,7 @@ html.focus .line{display:none}
    ============================================================ */
 :root{--rail:72px;--railW:252px;--ic:44px}  /* icon column = the rail's full content width (72 − 2×14) */
 
-/* the right edge is an inset shadow, so it never takes layout space */
-.rail{padding:0 14px 12px;gap:0;border:0;isolation:isolate;scrollbar-width:none;
-  background:hsl(from var(--surf) h s l / .8);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
-  box-shadow:inset -1px 0 0 var(--t30),4px 0 0 var(--a2)}
-html:not(.pinned) .rail:is(:hover,:focus-within){
-  box-shadow:inset -1px 0 0 var(--t30),4px 0 0 var(--a2),18px 0 40px -10px hsl(250 20% 8%/.35)}
-.rail::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:
-   radial-gradient(150% 36% at 0% 0%,var(--a2),transparent 90%),
-   radial-gradient(150% 30% at 100% 100%,var(--a1),transparent 90%)}
+
 
 /* ---------- header ---------- */
 .rail .rhd{position:relative;display:grid;grid-template-columns:var(--ic) minmax(0,1fr);align-items:center;padding:18px 0 16px}
