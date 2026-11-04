@@ -1,4 +1,4 @@
-"use strict";
+"use strict"; 
 /* north star: all of the words and data (plan months, rituals, prompts, syllabus, Calbert's lines) */
 
 /* ===== plan data ===== */
