@@ -580,6 +580,33 @@ function celebrate(dk,closed){
   if(!msg&&closed){const mo=+gp(`days/${dk}/mood`)||0;msg=(mo>0&&mo<=2)?"Read it. It’s in the drawer. Go and drink something warm, you’ve earned it.":CAL_CLOSE[s.stars%CAL_CLOSE.length]}
   if(msg){persistLocal();toast(msg)}
 }
+/* Calbert reads the room: first matching rule wins (priority order); lines are picked by day so they don't flicker */
+function calLine(dk){
+  const t=todayKey(),isT=dk===t,S=dayStats(dk),d=S.d,ci=cycleInfo(dk),pv=addDays(dk,-1),n=Math.floor(parse(dk)/864e5);
+  const lg=loggedDays().filter(k=>k<dk),last=lg.pop(),gap=last?daysBetween(last,dk):0;
+  const ws=weightsSorted(),wk=ws.filter(w=>w.d===dk).length&&ws.filter(w=>w.d<dk).pop();
+  const jr=k=>Object.keys((st.days[k]||{})).some(x=>/^j_|^jfree$|^win$|^grat$/.test(x)&&st.days[k][x]);
+  const ti=Math.max(0,TIERS.findIndex(x=>x[0]===(d.tier||"lantern"))),need=RIT.filter(r=>r.t<=ti).length;
+  const P=dayStats(pv),h=new Date().getHours();
+  const rules=[
+    ["sleep",S.sleep>0&&S.sleep<6],
+    ["steps",P.has&&P.steps>0&&P.steps<stepGoalFor(pv)],
+    [ci&&ci.ph==="menstrual"?"mens":"hare",d.tier==="bonfire"],
+    ["period",st.periods.some(p=>p.s===dk)||(ci&&ci.ph==="menstrual"&&ci.day===1)],
+    ["errand",[0,1,2].some(i=>d["t3d"+i])],
+    ["nojournal",isT&&!jr(dk)&&[1,2,3].every(i=>!jr(addDays(dk,-i)))&&lg.length>0],
+    ["weighin",!!wk&&daysBetween(wk.d,dk)>=10],
+    ["comeback",S.has&&gap>=10],
+    ["rituals",S.rit>=need&&need>0],
+    ["morning",isT&&h>=5&&h<12],
+    ["afternoon",isT&&h>=12&&h<17],
+    ["evening",isT&&h>=17&&h<24],
+    ["witching",isT&&h<5]
+  ];
+  const hit=rules.find(r=>r[1]);
+  if(!hit)return null;
+  const pool=CAL_CTX[hit[0]];return pool[n%pool.length];
+}
 const bk=ph=>ph==="Runway"?"The Thaw (Prologue)":"Book I · "+ph;
 
 /* ---------- avatar (image store keeps transparency) ---------- */
@@ -681,7 +708,7 @@ function pToday(arg){
   const museCard=card("muse","Muse of the day","star-four",`<div class="it" style="font-size:1.3rem;line-height:1.2">${esc(muse[0])}</div><div class="small muted" style="margin:2px 0 6px"><i>${esc(muse[1])}</i></div><p class="small">${esc(muse[2])}</p>`,{cls:"s4",r:`<button class="tx" data-act="muse">another</button>`});
   const nav=`<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,-1)}" aria-label="previous day">←</button>${isToday?"":`<button class="btn sm" data-act="go" data-h="#today">Today</button>`}<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,1)}" aria-label="next day">→</button>`;
   const phChip=ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name}</span>`:"";
-  const lineQ=LINES[Math.floor(parse(dk)/864e5)%LINES.length];
+  const lineQ=calLine(dk)||LINES[Math.floor(parse(dk)/864e5)%LINES.length];
   if(isToday&&Array.isArray(st.notes.pins)&&st.notes.pins.length&&!dayPins(dk).length){sp(`days/${dk}/pins`,[{id:uid(),items:st.notes.pins}]);sp("notes/pins",[]);save()}
   const cards=[nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)],F=!!LS.focus;
 return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(bk(m.ph))}</span> ${phChip}`,nav)+
@@ -821,7 +848,7 @@ const todoOf=w=>Array.isArray(gp(w+"/todo"))?gp(w+"/todo"):[];
 const PARTS=["rituals","water","steps","sleep","food","check-in","journal"],DN=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 function dayParts(k){const s=dayStats(k),d=s.d,wg=+st.settings.waterGoal||8,j=Object.keys(d).some(x=>/^j_|^jfree$|^win$|^grat$/.test(x)&&d[x]);
   return[s.rit>=3,s.water>=wg,s.steps>=stepGoalFor(k),s.sleep>=7,s.mealsLogged,!!(s.mood&&s.energy),!!j]}
-function phaseAvg(ph){const e=[];loggedDays().forEach(k=>{const c=cycleInfo(k),s=dayStats(k);if(c&&c.ph===ph&&s.energy)e.push(s.energy)});return e.length>=3?avg(e):null}
+function phaseAvg(ph){const L=loggedDays().filter(k=>{const c=cycleInfo(k);return c&&c.ph===ph}).map(dayStats);return insAvg(L)}
 
 function pWeek(arg){
   const k=DATE_RE.test(arg)?arg:todayKey(),days=weekDays(k),wk=isoWeek(k),w=`weeks/${wk}`;
@@ -1002,7 +1029,46 @@ function archSummary(){const ssA=starStats();
 }
 
 /* ============================================================ ARCHIVE */
-const archTabs=(cur)=>`<div class="subtabs">${[["days","Days"],["weeks","Weeks"],["months","Months"],["trends","Trends"],["cycle","Cycle"]].map(([k,l])=>`<button class="${cur===k?"on":""}" data-act="go" data-h="#archive/${k}">${l}</button>`).join("")}</div>`;
+/* ---- Insights tab: what your own data says ---- */
+const insAvg=L=>{const e=nums(L.map(s=>s.energy).filter(x=>x>0)),m=nums(L.map(s=>s.mood).filter(x=>x>0));return{n:L.length,e:e.length>=3?avg(e):null,m:m.length>=3?avg(m):null}};
+const hbars=(rows,mx=5)=>`<div class="hbars">${rows.map(([l,v,sub,c])=>`<div><span>${l}</span><i style="--w:${v==null?0:Math.max(3,v/mx*100)}%;${c?`--hc:${c}`:""}"></i><b class="num">${v==null?"–":r1(v)}</b>${sub?`<em>${sub}</em>`:""}</div>`).join("")}</div>`;
+const icard=(t,body,note)=>`<div class="card"><h3>${t}</h3>${note?`<p class="small" style="margin-bottom:10px">${note}</p>`:""}${body}</div>`;
+const NEED="<p class='small muted'>Log a few more days and this will fill in.</p>";
+function archInsights(){
+  const ks=loggedDays(),S={};ks.forEach(k=>S[k]=dayStats(k));
+  const bucket=[["under 6h",s=>s.sleep>0&&s.sleep<6],["6 to 7h",s=>s.sleep>=6&&s.sleep<7],["7h or more",s=>s.sleep>=7]];
+  const sl=bucket.map(([l,f])=>({l,...insAvg(ks.map(k=>S[k]).filter(f))}));
+  const ok=sl.filter(x=>x.e!=null),hi=ok[ok.length-1],lo=ok[0];
+  const sleepNote=ok.length>1&&hi.e!==lo.e?`After ${hi.l} your energy averages <b>${r1(hi.e)}</b> vs <b>${r1(lo.e)}</b> after ${lo.l}.`:"";
+  const prev=(f,g)=>{const y=[],n=[];ks.forEach(k=>{const p=S[addDays(k,-1)];if(p&&p.has&&(S[k].energy||S[k].mood))(f(p,addDays(k,-1))>=g(addDays(k,-1))?y:n).push(S[k])});return[insAvg(y),insAvg(n)]};
+  const [sy,sn]=prev(p=>p.steps,k=>stepGoalFor(k)),[wy,wn]=prev(p=>p.water,()=>+st.settings.waterGoal||8);
+  const pr=(a,b,l)=>a.e!=null&&b.e!=null?[[`${l} hit`,a.e,`${a.n}d`],[`${l} missed`,b.e,`${b.n}d`]]:[];
+  const dayRows=[...pr(sy,sn,"steps"),...pr(wy,wn,"water")];
+  const phs=Object.keys(PHASES).map(p=>({p,...phaseAvg(p)}));
+  const phRows=phs.filter(x=>x.e!=null).flatMap(x=>[[`${PHASES[x.p].name} · energy`,x.e,`${x.n}d`,PHASES[x.p].hue],[`${PHASES[x.p].name} · mood`,x.m,"",PHASES[x.p].hue]]);
+  const tiered=ks.filter(k=>S[k].d.tier),tc={};tiered.forEach(k=>(tc[S[k].d.tier]=tc[S[k].d.tier]||[]).push(k));
+  const moth=tc.candle||[],ms=moth.filter(starred).length;
+  const famRows=TIERS.map(t=>[t[1],(tc[t[0]]||[]).length,tiered.length?Math.round((tc[t[0]]||[]).length/tiered.length*100)+"%":""]);
+  const famPh=Object.keys(PHASES).map(p=>{const L=tiered.filter(k=>{const c=cycleInfo(k);return c&&c.ph===p});const top=TIERS.map(t=>[t[1],L.filter(k=>S[k].d.tier===t[0]).length]).sort((a,b)=>b[1]-a[1])[0];return L.length>=3&&top[1]?`<span class="chip phase" style="--ph:${PHASES[p].hue}">${PHASES[p].name}: mostly ${top[0]}</span>`:""}).join("");
+  const fel=k=>Object.keys(S[k].d.feel||{}).filter(f=>S[k].d.feel[f]);
+  const byMo={};ks.forEach(k=>fel(k).forEach(f=>{const m=byMo[k.slice(0,7)]=byMo[k.slice(0,7)]||{};m[f]=(m[f]||0)+1}));
+  const moRows=Object.keys(byMo).sort().reverse().slice(0,6).map(m=>`<div style="margin-bottom:8px"><div class="small muted"><b>${m}</b></div><div class="chips">${Object.entries(byMo[m]).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f,c])=>`<span class="chip on">${f} <span class="num">${c}</span></span>`).join("")}</div></div>`).join("");
+  const lowD=ks.filter(k=>S[k].energy>0&&S[k].energy<=2),base=lowD.length/Math.max(1,ks.filter(k=>S[k].energy>0).length);
+  const fl={};ks.forEach(k=>fel(k).forEach(f=>{const o=fl[f]=fl[f]||{n:0,low:0};o.n++;if(S[k].energy>0&&S[k].energy<=2)o.low++}));
+  const clus=Object.entries(fl).filter(([,o])=>o.n>=3&&o.low/o.n>base).sort((a,b)=>b[1].low/b[1].n-a[1].low/a[1].n).slice(0,4);
+  const fp={};ks.forEach(k=>{const c=cycleInfo(k);if(c)fel(k).forEach(f=>{const o=fp[c.ph]=fp[c.ph]||{};o[f]=(o[f]||0)+1})});
+  const fpHtml=Object.keys(fp).map(p=>{const t=Object.entries(fp[p]).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join(", ");return`<span class="chip phase" style="--ph:${PHASES[p].hue}">${PHASES[p].name}: ${t}</span>`}).join("");
+  return`<div class="cols c2"><div class="col">
+   ${icard("Sleep → energy and mood",sl.some(x=>x.e!=null)?hbars(sl.flatMap(x=>[[x.l+" · energy",x.e,x.n+"d"],[x.l+" · mood",x.m,""]])):NEED,sleepNote||"Log sleep, energy and mood for a couple of weeks.")}
+   ${icard("Yesterday’s steps and water → today",dayRows.length?hbars(dayRows):NEED,"Average energy the next day, depending on whether you hit the goal.")}
+   ${icard("Energy and mood by phase",phRows.length?hbars(phRows):NEED)}
+  </div><div class="col">
+   ${icard("Your familiars",tiered.length?hbars(famRows.map(r=>[r[0],r[1],r[2]]),Math.max(1,...famRows.map(r=>r[1])))+`<div class="chips" style="margin-top:8px">${famPh}</div>`+(moth.length?`<p class="small" style="margin-top:10px"><b>${ms}</b> of your <b>${moth.length}</b> Moth days still earned a star (${Math.round(ms/moth.length*100)}%).${ms?" A Moth day counts in full.":""}</p>`:""):NEED)}
+   ${icard("Feelings, month by month",moRows||NEED,"Your five most-logged feelings each month.")}
+   ${icard("What clusters",clus.length||fpHtml?(clus.length?`<p class="small">Feelings that turn up on low-energy days: ${clus.map(([f,o])=>`<b>${f}</b> (${Math.round(o.low/o.n*100)}%)`).join(", ")}.</p>`:"")+`<div class="chips" style="margin-top:8px">${fpHtml}</div>`:NEED,"Low energy means 1 or 2. Phases show your top three feelings.")}
+  </div></div>`;
+}
+const archTabs=(cur)=>`<div class="subtabs">${[["days","Days"],["weeks","Weeks"],["months","Months"],["trends","Trends"],["insights","Insights"],["cycle","Cycle"]].map(([k,l])=>`<button class="${cur===k?"on":""}" data-act="go" data-h="#archive/${k}">${l}</button>`).join("")}</div>`;
 function archDays(){
   let ks=loggedDays().reverse();
   if(amo)ks=ks.filter(k=>k.startsWith(amo));
@@ -1042,12 +1108,12 @@ function archCycle(){
   <div class="col"><div class="card"><h3>History</h3>${ps.length?`<table class="tbl"><tr><th>Started</th><th>Ended</th><th>Length</th><th>Cycle</th><th></th></tr>${rows}</table>`:`<p class="muted small">Nothing yet.</p>`}</div></div></div>`;
 }
 function pArchive(arg){
-  const t=["days","weeks","months","trends","cycle"].includes(arg)?arg:"days";
+  const t=["days","weeks","months","trends","insights","cycle"].includes(arg)?arg:"days";
   let body="";
   if(t==="days"){
     const mos=[...new Set(loggedDays().map(k=>k.slice(0,7)))].sort().reverse();
     body=archSummary()+`<div class="row" style="margin-bottom:12px"><div style="flex:2 1 220px"><input type="text" id="aq" placeholder="Search journal, wins, meals…" value="${esc(aq)}" aria-label="search"></div><div><select id="amo" aria-label="month"><option value="">All months</option>${mos.map(m=>`<option value="${m}" ${amo===m?"selected":""}>${monthLabel(m)}</option>`).join("")}</select></div></div><div id="archList">${archDays()}</div>`;
-  }else if(t==="weeks")body=archWeeks();else if(t==="months")body=archMonths();else if(t==="trends")body=archTrends();else body=archCycle();
+  }else if(t==="weeks")body=archWeeks();else if(t==="months")body=archMonths();else if(t==="trends")body=archTrends();else if(t==="insights")body=archInsights();else body=archCycle();
   return head("Archive","The drawer: every day, week and month you’ve logged, and the trends between them.")+archTabs(t)+body;
 }
 
