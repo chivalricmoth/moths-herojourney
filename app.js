@@ -1108,19 +1108,29 @@ function chrome(){
   const dpar=dayParts(todayKey()),dp=Math.round(dpar.filter(Boolean).length/dpar.length*100);
   document.documentElement.classList.toggle("pinned",pinned());
   document.documentElement.classList.toggle("focus",!!LS.focus&&r.name==="today");
-  const nav=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}" title="${l}">${ico(ic,r.name===k)}<span class="lb">${l}</span></a>`).join("");
+
+  const star=n=>`${n} star${n===1?"":"s"}`;
+  const nav=NAVS.map(([k,l,ic])=>{const on=r.name===k;
+    return `<a href="#${k}" class="rr ${on?"on":""}" title="${l}" ${on?'aria-current="page"':""}><span class="ic">${ico(ic,on)}</span><span class="lb">${l}</span></a>`}).join("");
+  const pinL=pinned()?"Unpin sidebar":"Pin sidebar open";
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
-   <div class="rhead"><a class="av" href="#settings" title="Settings">${avatarHtml()}</a><div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div></div>
-   <a class="rprog" href="#today" title="Today"><span class="ring" style="--p:${dp}"><b>${dp}</b></span><span class="t lb">today<small>${ss.stars} stars${ss.run>1?` · run ${ss.run}`:""}</small></span></a>
-   <div class="rsep"></div><div class="rnav">${nav}</div><div class="rsep"></div>
-   <div class="rq">
-    <button data-act="focus" class="${LS.focus?"on":""}" title="Focus mode (Today)">${ico("crosshair",!!LS.focus)}<span class="lb">Focus mode</span></button>
-    <button data-act="cycleHouse" title="Accent colour"><span class="dot"></span><span class="lb">Accent</span></button>
-    <button data-act="toggleTheme" class="themeBtn-w" title="Light / dark"><span class="themeBtn"></span><span class="lb">Light / dark</span></button></div>
+   <div class="rbar"><span class="lights">
+     <button class="lt lt-pin ${pinned()?"on":""}" data-act="pin" data-g="${pinned()?"↤":"↦"}" aria-pressed="${pinned()}" aria-label="${pinL}" title="${pinL}"></button>
+     <button class="lt lt-acc" data-act="cycleHouse" data-g="✦" aria-label="Next accent colour" title="Accent colour"></button>
+     <button class="lt lt-thm" data-act="toggleTheme" aria-label="Light or dark" title="Light / dark"></button>
+   </span></div>
+   <div class="rhd">
+     <a class="rav" href="#settings" title="Profile and settings" aria-label="Profile and settings">${avatarHtml()}</a>
+     <div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div>
+   </div>
+   <a class="rr rpg" href="#today" title="Today"><span class="ic"><span class="ring" style="--p:${dp}"><b>${dp}</b></span></span><span class="lb t">today<small>${star(ss.stars)}${ss.run>1?` · run ${ss.run}`:""}</small></span></a>
+   <div class="rlab"><span class="lb">the road</span></div>
+   <div class="rgrp">${nav}</div>
+   <div class="rlab"><span class="lb">tools</span></div>
+   <div class="rgrp"><button class="rr ${LS.focus?"on":""}" data-act="focus" title="Focus mode (Today)"><span class="ic">${ico("crosshair",!!LS.focus)}</span><span class="lb">Focus mode</span></button></div>
    <div class="rfoot">
-    <div class="syncline"><span class="syncdot"></span><span class="lb syncstat"></span></div>
-    <button data-act="pin" title="Pin sidebar">${ico(pinned()?"push-pin-slash":"push-pin")}<span class="lb">${pinned()?"Unpin":"Pin open"}</span></button>
-    <div class="rnav"><a href="#settings" class="${r.name==="settings"?"on":""}">${ico("gear-six",r.name==="settings")}<span class="lb">Settings</span></a></div>
+     <div class="rr ro"><span class="ic"><span class="syncdot"></span></span><span class="lb syncstat"></span></div>
+     <a href="#settings" class="rr ${r.name==="settings"?"on":""}" title="Settings"><span class="ic">${ico("gear-six",r.name==="settings")}</span><span class="lb">Settings</span></a>
    </div></nav>`;
   $("topbar").innerHTML=`<a class="wordmark" href="#today">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="focus" aria-label="Focus mode"><i class="ph ph-crosshair"></i></button><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
   $("tabs").innerHTML=NAVS.filter(n=>TABS.includes(n[0])).map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
