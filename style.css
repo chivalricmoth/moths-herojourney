@@ -547,21 +547,89 @@ html.focus .line{display:none}
 .todo .tx{opacity:0}.todo li:hover .tx,.todo li:focus-within .tx{opacity:1}
 @media(hover:none){.todo .tx{opacity:1}}
 
-/* ---------- R.E.P.O.R.T. polaroids ---------- */
-.rep2{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:22px 18px;padding:6px 4px}
-.pol{--r:-1.2deg;position:relative;background:#f3eee6;color:#16131a;padding:10px 10px 12px;transform:rotate(var(--r));box-shadow:0 10px 24px hsl(0 0% 0%/.38),0 0 0 1px hsl(0 0% 0%/.06);transition:transform .25s}
-.pol:nth-child(even){--r:1.5deg}.pol:nth-child(3n){--r:-.4deg}
-.pol:hover{transform:rotate(0) translateY(-3px) scale(1.02);z-index:2}
-.pol::before{content:"";position:absolute;top:-9px;left:50%;width:62px;height:18px;margin-left:-31px;background:hsl(var(--ah) 30% 70%/.55);transform:rotate(-3deg)}
-.pol .shot{position:relative;aspect-ratio:1;background:#16131a;overflow:hidden;display:grid;place-items:center}
-.pol .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:contrast(1.1) saturate(.8) sepia(.12)}
-.pol .shot .L{position:relative;font:100 5rem/1 var(--script);color:var(--acc);opacity:.7}
-.pol .btns{position:absolute;inset:auto 5px 5px auto;display:flex;gap:4px;z-index:2}
-.pol .btns .btn{min-height:26px;padding:0 8px;background:hsl(0 0% 100%/.86);color:#16131a;border-color:transparent;font-size:.66rem}
-.pol .n{display:flex;justify-content:space-between;margin:9px 0 3px;font:800 .58rem var(--sans);letter-spacing:.22em;text-transform:uppercase}
-.pol .n em{font:italic 400 .8rem var(--serif);letter-spacing:0;text-transform:lowercase;color:hsl(var(--ah) 35% 36%)}
-.pol textarea{border:0;background:transparent;color:#16131a;min-height:58px;padding:2px 0;font:italic 500 1.02rem/1.25 var(--serif);resize:none;box-shadow:none}
-.pol textarea::placeholder{color:#16131a88}
+/* ============================================================
+   R.E.P.O.R.T. v2
+   ============================================================ */
+
+/* new icon for the edit button */
+.ph-pencil-simple{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='currentColor'%3E%3Cpath d='M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z'/%3E%3C/svg%3E")}
+
+/* ---------- grid: the wrapper is the container, so columns follow the card's width ---------- */
+.repwrap{container-type:inline-size;container-name:rep}
+.rep3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap);align-items:stretch}
+@container rep (max-width:860px){.rep3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container rep (max-width:540px){.rep3{grid-template-columns:minmax(0,1fr)}}
+
+/* each cell is its own container, so the card lays itself out from its own width */
+.rc{container-type:inline-size;container-name:rcell;min-width:0;display:flex}
+.rcard{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;padding:12px;
+  background:var(--surf2);border:1px solid var(--t15);border-radius:var(--r2)}
+.rcard.k-empty{background:transparent}
+
+/* ---------- header ---------- */
+.rh{display:flex;align-items:center;gap:10px;min-height:30px}
+.rl{font:800 .64rem/1 var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--t75)}
+.rn{display:inline-flex;align-items:center;gap:6px;font:400 .66rem/1 var(--mono);letter-spacing:.08em;color:var(--t55)}
+.rn::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.rbtn{margin-left:auto;width:30px;height:30px;display:grid;place-items:center;border:1px solid transparent;border-radius:var(--r2);background:transparent;color:var(--t55);font-size:1rem;transition:var(--ease)}
+.rbtn:hover{color:var(--accT);border-color:var(--t15);background:var(--a1)}
+.rtray{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border:1px dashed var(--t30);border-radius:var(--r2)}
+
+/* ---------- body: stacked by default, side-by-side when the card itself is wide ---------- */
+.rbody{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rslot{display:block;width:100%;aspect-ratio:4/3;border-radius:var(--r2)}
+@container rcell (min-width:420px){
+  .rbody{flex-direction:row;align-items:stretch;gap:14px}
+  .rbody>.rslot{flex:0 0 46%;width:46%;align-self:flex-start}
+  .rbody>.rcap,.rbody>.rform{flex:1;min-width:0}
+  .k-q .rbody>.rslot,.k-empty .rbody>*{flex:1;width:auto}
+}
+
+/* ---------- image mode ---------- */
+.rmedia{position:relative;padding:0;border:1px solid var(--t15);overflow:hidden;cursor:zoom-in;background:var(--bg)}
+.rmedia::before{content:"";position:absolute;inset:0}
+.rmedia:not(.ld):not(.bad)::before{background:linear-gradient(90deg,var(--t08),var(--t15),var(--t08));background-size:200% 100%;animation:rsk 1.2s linear infinite}
+.rmedia img{position:relative;display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.rmedia:hover{border-color:var(--accT)}
+.rmedia .rerr{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;color:var(--t75);font-size:.8rem}
+.rmedia .rerr small{color:var(--t55)}
+.rmedia.bad{cursor:pointer;border-style:dashed;border-color:var(--bad)}
+.rmedia.bad img{display:none}
+.rmedia.bad .rerr{display:flex}
+@keyframes rsk{to{background-position:-200% 0}}
+.sk{border:1px solid var(--t15);background:linear-gradient(90deg,var(--t08),var(--t15),var(--t08));background-size:200% 100%;animation:rsk 1.2s linear infinite}
+
+/* caption: serif, room for 2–3 lines, grows with the text */
+.rcard textarea{min-height:0;border:0;background:transparent;box-shadow:none;padding:2px 0;resize:none;overflow:hidden;font:500 1.05rem/1.35 var(--serif);font-style:italic;color:var(--t90)}
+.rcard textarea:focus{box-shadow:none;border:0;outline:none}
+.rcard textarea::placeholder{color:var(--t55)}
+.rcap{min-height:4.1em!important}
+
+/* ---------- text-only mode: pull-quote with an accent bar ---------- */
+.rquote{display:flex;align-items:center;aspect-ratio:auto;min-height:calc(100cqw*.55);padding:6px 4px 6px 16px;border-left:3px solid var(--acc)}
+.rquote textarea{width:100%;font:500 1.5rem/1.28 var(--serif);font-style:italic;color:var(--text)}
+@container rcell (min-width:420px){.rquote{min-height:calc(100cqw*.3)}}
+
+/* ---------- empty state ---------- */
+.rempty{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:calc(100cqw*.55);padding:14px;border:1.5px dashed var(--t30);border-radius:var(--r2)}
+.rempty p{font:500 1.08rem/1.35 var(--serif);font-style:italic;color:var(--t55)}
+.rempty small{display:block;margin-top:6px;font:400 .66rem var(--mono);letter-spacing:.04em;color:var(--t55)}
+.racts{display:flex;gap:6px;flex-wrap:wrap}
+.rempty .btn{color:var(--t75)}
+.rempty .btn:hover{color:var(--text)}
+@container rcell (min-width:420px){.rempty{min-height:calc(100cqw*.3)}}
+
+/* ---------- link form ---------- */
+.rform{min-width:0}
+.rfail{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:14px;border:1px dashed var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent);color:var(--t75);font-size:.82rem}
+.rfail b{color:var(--bad);font-size:.88rem}
+
+/* ---------- lightbox: show the whole picture ---------- */
+.lightbox figure{margin:0;max-width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+.lightbox img{max-width:100%;max-height:82vh;object-fit:contain}
+.lightbox figcaption{max-width:60ch;text-align:center;color:#fff;font:italic 500 1.1rem/1.4 var(--serif)}
+@media(prefers-reduced-motion:reduce){.sk,.rmedia::before{animation:none!important}}
+
 
 /* ---------- month: reflection steps, print ---------- */
 .rstep{display:grid;grid-template-columns:34px 1fr;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--t08)}
