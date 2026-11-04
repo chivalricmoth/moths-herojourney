@@ -1194,10 +1194,9 @@ function chrome(){
   const tools=[
     row({act:"focus",t:"Focus mode (Today)",l:"Focus mode",ic:ico("crosshair",!!LS.focus),on:!!LS.focus,pr:!!LS.focus}),
     row({act:"pin",t:pinL,l:"Pin sidebar",ic:ico(pinned()?"push-pin":"push-pin-slash",pinned()),on:pinned(),pr:pinned()}),
-    row({act:"accent",t:"Accent colour",l:"Accent",s:`<span class="accLb">${esc(hs[1])}</span>`,ic:`<span class="aic">${ico("palette")}<span class="adot"></span></span>`,x:'aria-haspopup="true" aria-expanded="false"'}),
+    row({act:"cycleHouse",t:"Next accent colour",l:"Accent",s:`<span class="accLb">${esc(hs[1])}</span>`,ic:`<span class="aic">${ico("palette")}<span class="adot"></span></span>`}),
     row({act:"toggleTheme",t:"Light or dark",l:"Theme",s:`<span class="themeLb">${th==="dark"?"Dark":"Light"}</span>`,ic:'<span class="tg"></span>'})
   ].join("");
-  closeFly();
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
    <div class="rhd">
      <a class="rav" href="#settings" title="Profile and settings" aria-label="Profile and settings">${avatarHtml()}</a>
@@ -1319,7 +1318,7 @@ document.addEventListener("click",async e=>{
    case"theme":LS.theme=D.v;persistLocal();applyLook();render();break;
    case"toggleTheme":LS.theme=document.documentElement.dataset.theme==="dark"?"light":"dark";persistLocal();applyLook();break;
    case"pickHouse":LS.house=D.h;persistLocal();applyLook();render();break;
-   case"cycleHouse":{const n=(HOUSES.findIndex(h=>h[0]===LS.house)+1)%HOUSES.length;LS.house=HOUSES[n][0];persistLocal();applyLook();toast("accent: "+HOUSES[n][1]);if(R().name==="settings")render();break}
+   case"cycleHouse":{const n=(HOUSES.findIndex(h=>h[0]===LS.house)+1)%HOUSES.length;LS.house=HOUSES[n][0];persistLocal();applyLook();document.querySelectorAll(".accLb").forEach(e=>e.textContent=HOUSES[n][1]);toast("accent: "+HOUSES[n][1]);if(R().name==="settings")render();break}
    case"rmAvatar":sp("settings/avatar","");save();render();break;
    case"syncSave":saveConn();toast("connection saved");break;
    case"syncNow":saveConn();await syncNow(true);if(R().name==="settings")render();break;
