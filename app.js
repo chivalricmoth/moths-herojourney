@@ -727,11 +727,89 @@ function barsHtml(vals,labels,goal,fmt=r0){
 const wkOf=k=>`weeks/${isoWeek(k)}`;
 const REP=[["R","Reading","a photo of what you’re reading, or a line you loved from this month’s book","reading"],["E","Eating","a favourite meal, snack or coffee from the week","eating"],["P","Playing","a hobby, game, activity or event you took part in","playing"],["O","Obsessing","what you can’t stop thinking about, listening to or watching","obsessing"],["R","Recommending","a product, show, spot or tip to pass on or save for posterity","recommending"],["T","Treating","something special you did or bought to pamper yourself","treating"]];
 const picSrc=v=>/^https?:/.test(v)?`<img src="${esc(v)}" alt="" referrerpolicy="no-referrer" loading="lazy">`:"";
+/* ============================================================
+   R.E.P.O.R.T. v2: paste over the old repHtml() in app.js,
+   and DELETE the old repLink / repClr branches in the
+   "weekly report / pins / events handlers" click listener.
+   Data model is unchanged: weeks/<wk>/rep/<i>/i (image url) and /t (text).
+   ============================================================ */
+const repUI={}; /* key -> {mode:"url"|"write"|"edit", val, st:"load"|"fail"} (transient, never synced) */
+const repKey=(w,i)=>`${w}/rep/${i}`;
+
+function repCard(w,i,rc){
+  const [,name,why]=REP[i],k=repKey(w,i),im=(gp(k+"/i")||"").trim(),tx=gp(k+"/t")||"";
+  const hasI=/^https?:\/\//i.test(im),hasT=!!tx.trim(),ui=repUI[k]||{},num=p2(i+1);
+  const edit=(hasI||hasT)&&ui.mode!=="url";
+  const head=`<header class="rh"><span class="rl">${name}</span><span class="rn">${num}</span>${edit?`<button class="rbtn" data-act="repEdit" data-r="${esc(k)}" aria-label="Edit ${name}" title="Edit"><i class="ph ph-pencil-simple"></i></button>`:""}</header>`;
+  const tray=ui.mode==="edit"?`<div class="rtray"><button class="btn sm ghost" data-act="repOpen" data-m="url" data-r="${esc(k)}"><i class="ph ph-link"></i>${hasI?"change":"add"} image link</button>${hasI?`<button class="btn sm ghost" data-act="repRmImg" data-r="${esc(k)}"><i class="ph ph-x"></i>remove image</button>`:""}${hasT?`<button class="btn sm ghost" data-act="repClrTxt" data-r="${esc(k)}"><i class="ph ph-trash"></i>clear text</button>`:""}<button class="btn sm ghost" data-act="repDone" data-r="${esc(k)}">done</button></div>`:"";
+  const cap=(ph,extra="")=>`<textarea class="rcap" ${B(k+"/t")} data-grow rows="2" placeholder="${esc(ph)}" ${extra}>${esc(tx)}</textarea>`;
+  let body,kind;
+  if(ui.mode==="url"){
+    const v=ui.val!=null?ui.val:im;kind="form";
+    const prev=ui.st==="load"?`<div class="rslot sk" aria-label="loading image"></div>`:ui.st==="fail"?`<div class="rslot rfail"><b>couldn’t load that link</b><span>Check it’s a direct image URL. It’s still below to edit.</span></div>`:"";
+    body=`${prev}<div class="rform"><label class="f" style="margin-top:0">Image link</label><input type="url" data-repurl="${esc(k)}" value="${esc(v)}" placeholder="https://…" data-autofocus><div class="chips" style="margin-top:8px"><button class="btn solid sm" data-act="repUrlSave" data-r="${esc(k)}">${ui.st==="load"?"Checking…":"Save"}</button><button class="btn sm ghost" data-act="repUrlCancel" data-r="${esc(k)}">Cancel</button>${hasI?`<button class="btn sm ghost" data-act="repRmImg" data-r="${esc(k)}">Remove image</button>`:""}</div></div>`;
+  }else if(hasI){
+    kind="img";
+    body=`<button class="rslot rmedia" data-act="repZoom" data-r="${esc(k)}" data-u="${esc(im)}" data-c="${esc(tx.replace(/<[^>]*>/g,""))}" aria-label="Open ${name} image full size"><img src="${esc(im)}" alt="" referrerpolicy="no-referrer" loading="lazy" onload="this.parentNode.classList.add('ld')" onerror="this.parentNode.classList.add('bad')"><span class="rerr"><b>couldn’t load</b><small>tap to fix the link</small></span></button>${cap(why)}`;
+  }else if(hasT||ui.mode==="write"){
+    kind="q";
+    body=`<div class="rslot rquote"><textarea ${B(k+"/t")} data-grow rows="2" placeholder="${esc(why)}" ${ui.mode==="write"?"data-autofocus":""}>${esc(tx)}</textarea></div>`;
+  }else{
+    kind="empty";
+    body=`<div class="rempty"><p>${esc(why)}</p>${i===0&&rc&&rc.fic?`<small>this month: ${esc(rc.fic)}</small>`:""}<div class="racts"><button class="btn sm ghost" data-act="repOpen" data-m="url" data-r="${esc(k)}"><i class="ph ph-plus"></i>image link</button><button class="btn sm ghost" data-act="repOpen" data-m="write" data-r="${esc(k)}"><i class="ph ph-plus"></i>write</button></div></div>`;
+  }
+  return `<article class="rcard k-${kind}">${head}${tray}<div class="rbody">${body}</div></article>`;
+}
 function repHtml(w,mid){
   const rc=RECS[mid];
-  return card("report","Weekly R.E.P.O.R.T.","newspaper",`<div class="rep2">${REP.map(([L,n,why],i)=>{const k=`${w}/rep/${i}`,im=gp(k+"/i");
-   return`<figure class="pol"><div class="shot">${picSrc(im)||`<span class="L">${L}</span>`}<div class="btns"><button class="btn sm" data-act="repLink" data-k="${k}/i" title="link an image"><i class="ph ph-link"></i></button>${im?`<button class="btn sm" data-act="repClr" data-k="${k}/i" title="remove"><i class="ph ph-x"></i></button>`:""}</div></div><div class="n"><span>${n}</span><em>${i===0&&rc?esc(rc.fic):""}</em></div>${area(k+"/t",why,2)}</figure>`}).join("")}</div>`,{cls:"s12",r:"the week in six snapshots"});
+  return card("report","Weekly R.E.P.O.R.T.","newspaper",`<div class="repwrap"><div class="rep3">${REP.map((_,i)=>`<div class="rc">${repCard(w,i,rc)}</div>`).join("")}</div></div>`,{cls:"s12",r:"the week in six snapshots"});
 }
+
+/* call this at the END of render() */
+function repGrow(){
+  document.querySelectorAll(".rcard textarea[data-grow]").forEach(t=>{t.style.height="auto";t.style.height=t.scrollHeight+"px"});
+  const f=document.querySelector(".rcard [data-autofocus]");
+  if(f){f.removeAttribute("data-autofocus");f.focus({preventScroll:true})}
+}
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.matches&&t.matches(".rcard textarea[data-grow]")){t.style.height="auto";t.style.height=t.scrollHeight+"px";if(window.muRefresh)muRefresh()}
+});
+
+function repZoom(u,c){
+  const lb=document.createElement("div");lb.className="lightbox";lb.setAttribute("role","dialog");
+  lb.innerHTML=`<figure><img src="${esc(u)}" alt="" referrerpolicy="no-referrer">${c?`<figcaption>${esc(c)}</figcaption>`:""}</figure>`;
+  const close=()=>{lb.remove();document.removeEventListener("keydown",onK)},onK=ev=>{if(ev.key==="Escape")close()};
+  lb.onclick=close;document.addEventListener("keydown",onK);document.body.appendChild(lb);
+}
+function repUrlSave(k,root){
+  const inp=root.querySelector("input[data-repurl]"),u=(inp.value||"").trim();
+  if(!/^https?:\/\//i.test(u)){repUI[k]={mode:"url",val:u,st:"fail"};return render()}
+  repUI[k]={mode:"url",val:u,st:"load"};render();
+  const img=new Image();img.referrerPolicy="no-referrer";
+  img.onload=()=>{sp(k+"/i",u);save();delete repUI[k];render()};
+  img.onerror=()=>{repUI[k]={mode:"url",val:u,st:"fail"};render()};
+  img.src=u;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest('[data-act^="rep"]');if(!b)return;
+  const a=b.dataset.act,k=b.dataset.r;
+  if(a==="repOpen")repUI[k]={mode:b.dataset.m,val:null};
+  else if(a==="repEdit")repUI[k]=repUI[k]&&repUI[k].mode==="edit"?undefined:{mode:"edit"};
+  else if(a==="repDone"||a==="repUrlCancel")delete repUI[k];
+  else if(a==="repRmImg"){sp(k+"/i","");save();delete repUI[k]}
+  else if(a==="repClrTxt"){sp(k+"/t","");save();delete repUI[k]}
+  else if(a==="repZoom"){if(b.classList.contains("bad"))repUI[k]={mode:"url",val:null};else return repZoom(b.dataset.u,b.dataset.c)}
+  else if(a==="repUrlSave")return repUrlSave(k,b.closest(".rcard"));
+  else return;
+  if(repUI[k]===undefined)delete repUI[k];
+  render();
+});
+document.addEventListener("keydown",e=>{
+  const t=e.target;if(!t.matches||!t.matches("input[data-repurl]"))return;
+  if(e.key==="Enter"){e.preventDefault();repUrlSave(t.dataset.repurl,t.closest(".rcard"))}
+  else if(e.key==="Escape"){delete repUI[t.dataset.repurl];render()}
+});
 const evOf=id=>Array.isArray(gp(`months/${id}/ev`))?gp(`months/${id}/ev`):[];
 const gcUrl=e=>`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.t)}&dates=${e.d.replace(/-/g,"")}/${addDays(e.d,1).replace(/-/g,"")}`;
 const gcEmbed=()=>{const v=(st.settings.gcalEmbed||"").trim();if(!v)return"";const s=/^https?:/.test(v)?v:`https://calendar.google.com/calendar/embed?mode=AGENDA&src=${encodeURIComponent(v)}`;return /^https:\/\/calendar\.google\.com\//.test(s)?`<iframe class="gcal" src="${esc(s)}" loading="lazy"></iframe>`:""};
@@ -1076,8 +1154,6 @@ document.addEventListener("click",e=>{
   else if(a==="todoTog"){sp(D.w+"/todo",todoOf(D.w).map(x=>x.id===D.id?Object.assign({},x,{x:!x.x}):x));save();render()}
   else if(a==="todoDel"){sp(D.w+"/todo",todoOf(D.w).filter(x=>x.id!==D.id));save();render()}
   else if(a==="todoCarry"){sp(D.w+"/todo",todoOf(D.w).concat(todoOf(D.pw).filter(x=>!x.x).map(x=>({id:uid(),t:x.t,d:"",x:false}))));save();render()}
-  else if(a==="repLink"){const u=prompt("Image link (https://…)");if(u&&/^https?:\/\//.test(u)){sp(D.k,u.trim());save();render()}}
-  else if(a==="repClr"){sp(D.k,"");save();render()}
   else if(a==="evAdd"){const d=$("evD").value,t=$("evT").value.trim();if(!d||!t)return toast("add a date and a note");sp(`months/${D.m}/ev`,evOf(D.m).concat({id:uid(),d,t}));save();render()}
   else if(a==="evDel"){sp(`months/${D.m}/ev`,evOf(D.m).filter(x=>x.id!==D.id));save();render()}
 });
