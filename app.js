@@ -71,7 +71,7 @@ function stamp(p){
 function sp(p,v){
   const ks=p.split("/");let o=st;
   ks.slice(0,-1).forEach(k=>{if(o[k]==null)o[k]={};o=o[k]});
-  o[ks[ks.length-1]]=v;stamp(p);
+  o[ks[ks.length-1]]=v;stamp(p);if(p.charAt(0)==="d")calNote(p,v);
 }
 function addItem(coll,item){item.id=uid();item._u=Date.now();st[coll].push(item);return item}
 function delItem(coll,i){const it=st[coll][i];if(!it)return;st.del[it.id]=Date.now();st[coll].splice(i,1)}
@@ -147,8 +147,8 @@ function dayStats(k){
   const meals=d.meals||{};
   const kcal=Object.values(meals).reduce((a,m)=>a+(+m.k||0),0);
   const mealsLogged=Object.values(meals).some(m=>(m.t||"").trim()||+m.k);
-  const o={d,rit,done:!!d.done||rit>=3,water:+d.water||0,steps:+d.steps||0,sleep:+d.sleep||0,mood:+d.mood||0,energy:+d.energy||0,kcal,mealsLogged,flow:d.flow||"",win:d.win||""};
-  o.has=!!(rit||o.water||o.steps||o.sleep||o.mood||o.energy||mealsLogged||d.journal||d.win||d.grat||d.flow||d.done);
+  const o={d,rit,done:!!d.done||rit>=3,water:+d.water||0,steps:+d.steps||0,sleep:+d.sleep||0,mood:+d.mood||0,energy:+d.energy||0,kcal,mealsLogged,flow:d.flow||"",weed:d.weed||"",win:d.win||""};
+  o.has=!!(rit||o.water||o.steps||o.sleep||o.mood||o.energy||mealsLogged||d.journal||d.win||d.grat||d.flow||d.done||d.weed||d.wake||d.bed);
   return o;
 }
 const loggedDays=()=>Object.keys(st.days).filter(k=>/^\d{4}-\d\d-\d\d$/.test(k)&&dayStats(k).has).sort();
@@ -548,7 +548,7 @@ function estimateMeal(text){
 const DATE_RE=/^\d{4}-\d\d-\d\d$/, MON_RE=/^\d{4}-\d\d$/;
 const R=()=>{const h=location.hash.replace("#","").split("/");return{name:h[0]||"today",arg:h[1]||"",arg2:h[2]||""}};
 const MOODS=["","low","meh","okay","good","bright"], ENERGY=["","drained","low","steady","good","charged"];
-const SYMPTOMS=[["cramps","Cramps"],["headache","Headache"],["bloat","Bloated"],["tired","Tired"],["moody","Moody"],["cravings","Cravings"],["tender","Tender"],["acne","Breakouts"],["great","Great energy"]];
+const SYMPTOMS=[["cramps","Cramps"],["headache","Headache"],["bloat","Bloated"],["tired","Tired"],["moody","Moody"],["cravings","Cravings"],["tender","Tender"],["acne","Breakouts"],["great","Great energy"],["migraine","Migraine"],["backache","Back ache"],["nausea","Nausea"],["insomnia","Couldn’t sleep"],["brainfog","Brain fog"],["anxiety","Anxious body"],["jointpain","Joint pain"],["musclesore","Sore muscles"],["dizzy","Dizzy"],["oversleep","Slept too much"],["palpitations","Racing heart"],["hotflush","Hot flushes"],["chills","Chills"],["sorethroat","Sore throat"],["congested","Congested"],["cough","Cough"],["allergy","Allergies"],["indigestion","Indigestion"],["constipated","Constipated"],["looseness","Upset tummy"],["lowappetite","No appetite"],["hungry","Always hungry"],["sweetcrave","Sweet cravings"],["saltycrave","Salty cravings"],["dryskin","Dry skin"],["oilyskin","Oily skin"],["hairfall","Hair shedding"],["swollen","Puffy"],["eyestrain","Eye strain"],["tmj","Jaw tension"],["tension","Tight shoulders"],["lowlibido","Low libido"],["highlibido","High libido"],["spotting","Spotting"],["ovpain","Ovulation pain"],["pms","PMS"],["weak","Weak"],["glow","Glowing"],["strong","Feeling strong"]];
 const FLOWS=[["spot","Spotting"],["light","Light"],["med","Medium"],["heavy","Heavy"]];
 const MEALS=[["b","Breakfast"],["l","Lunch"],["d","Dinner"],["s","Snacks"]];
 let aq="",amo="",trRange=90,customOpen=false;
@@ -603,9 +603,12 @@ function calLine(dk){
     ["evening",isT&&h>=17&&h<24],
     ["witching",isT&&h<5]
   ];
-  const hit=rules.find(r=>r[1]);
+  const ev=isT&&(st.notes||{}).calEv,mk={bonfire:ci&&ci.ph==="menstrual"?"mens":"hare"};
+  let hit=null,salt=0;
+  if(ev&&ev.d===dk){const key=mk[ev.k]||ev.k;hit=rules.find(r=>r[0]===key&&r[1]);if(hit)salt=Math.floor(ev.t/6e4)}
+  if(!hit)hit=rules.find(r=>r[1]);
   if(!hit)return null;
-  const pool=CAL_CTX[hit[0]];return pool[n%pool.length];
+  const pool=CAL_CTX[hit[0]];return pool[(n+salt)%pool.length];
 }
 const bk=ph=>ph==="Runway"?"The Thaw (Prologue)":"Book I · "+ph;
 
@@ -686,7 +689,7 @@ function pToday(arg){
 
   const mealsCard=card("meals","Meals","fork-knife",`${MEALS.map(([id,l])=>{const t=gp(`days/${dk}/meals/${id}/t`)||"",e=estimateMeal(t);return `<div class="meal2"><div class="mh"><span><i class="ph ph-${{b:"coffee",l:"bowl-food",d:"cooking-pot",s:"cookie"}[id]||"fork-knife"}"></i>${l}</span><span class="est" id="est_${id}">${e.total?"≈ "+e.total+" kcal":""}</span></div><textarea data-meal="${id}" rows="2" placeholder="e.g. 2 eggs, toast with butter, large oat latte">${esc(t)}</textarea><div class="mf"><span id="unk_${id}" class="unk">${e.unknown.length?"couldn’t size: "+esc(e.unknown.join(", ")):""}</span><span style="margin-left:auto">override</span>${numIn(`days/${dk}/meals/${id}/k`,"kcal")}</div></div>`}).join("")}<p class="small muted" style="margin-top:8px">estimates are rough. awareness, not judgment.</p>`,{cls:"s4",r:`<span class="num" id="kcalTot">${S.kcal?S.kcal.toLocaleString()+" kcal":"–"}${calG?" / "+calG.toLocaleString():""}</span>`});
 
-  const bodyCard=card("body","Body","heartbeat",`<div class="water">${Array.from({length:Math.max(wg,S.water)},(_,i)=>`<button class="${i<S.water?"on":""}" data-act="water" data-n="${i+1}" aria-label="${i+1} glasses"></button>`).join("")}</div>${bar(S.water,wg)}<div class="small muted num" style="margin-top:4px">${S.water} / ${wg} glasses</div><div class="row" style="margin-top:12px"><div><label class="f" style="margin-top:0">Steps · goal ${sg.toLocaleString()}</label>${numIn(`days/${dk}/steps`,"0")}<div id="stepsBar">${bar(S.steps,sg)}</div></div><div><label class="f" style="margin-top:0">Sleep (hours)</label>${numIn(`days/${dk}/sleep`,"0",'step=".5"')}<div id="sleepBar">${bar(S.sleep,8)}</div></div></div><label class="f">Mood <span class="muted">${MOODS[S.mood]||""}</span></label>${faceRow("mood",S.mood,FACE,MOODS)}<label class="f">Energy <span class="muted">${ENERGY[S.energy]||""}</span></label>${faceRow("energy",S.energy,BATT,ENERGY)}<label class="f">How else do you feel?</label>${feelHtml(dk)}`,{cls:"s6"});
+  const bodyCard=card("body","Body","heartbeat",`<div class="water">${Array.from({length:Math.max(wg,S.water)},(_,i)=>`<button class="${i<S.water?"on":""}" data-act="water" data-n="${i+1}" aria-label="${i+1} glasses"></button>`).join("")}</div>${bar(S.water,wg)}<div class="small muted num" style="margin-top:4px">${S.water} / ${wg} glasses</div><div class="row" style="margin-top:12px"><div><label class="f" style="margin-top:0">Steps · goal ${sg.toLocaleString()}</label>${numIn(`days/${dk}/steps`,"0")}<div id="stepsBar">${bar(S.steps,sg)}</div></div><div><label class="f" style="margin-top:0">Sleep (hours)</label>${numIn(`days/${dk}/sleep`,"0",'step=".5"')}<div id="sleepBar">${bar(S.sleep,8)}</div></div></div>${sleepTimes(dk,d)}<label class="f">Mood <span class="muted">${MOODS[S.mood]||""}</span></label>${faceRow("mood",S.mood,FACE,MOODS)}<label class="f">Energy <span class="muted">${ENERGY[S.energy]||""}</span></label>${faceRow("energy",S.energy,BATT,ENERGY)}<label class="f">How else do you feel?</label>${feelHtml(dk)}${weedHtml(d)}${symBody(dk)}`,{cls:"s6"});
 
   /* cycle */
   let cycleCard="";
@@ -701,7 +704,7 @@ function pToday(arg){
   if(st.settings.trackCycle!==false){
     if(ci){
       const P=PHASES[ci.ph],tip=P.tips[(dayN+ci.day)%P.tips.length],nx=nextPeriod();
-      cycleCard=card("cycle","Cycle","moon",`<div class="chips" style="margin-bottom:8px"><span class="chip phase" style="--ph:${P.hue}">${P.name} phase</span>${ci.overdue?`<span class="chip">period may be due</span>`:""}</div><p class="small muted" style="margin-bottom:8px">${esc(P.blurb)}</p><p class="tip">${esc(tip)}</p>${nx?`<p class="small muted" style="margin-top:8px">Next period around ${md(nx)} (${daysBetween(todayKey(),nx)} days).</p>`:""}<div class="chips" style="margin-top:10px">${pBtns.join("")}</div>${flowHtml}${symHtml}`,{cls:"tint",r:`day ${ci.day} of ~${ci.len}${ci.pred?" · est.":""}`});
+      cycleCard=card("cycle","Cycle","moon",`<div class="chips" style="margin-bottom:8px"><span class="chip phase" style="--ph:${P.hue}">${P.name} phase</span>${ci.overdue?`<span class="chip">period may be due</span>`:""}</div><p class="small muted" style="margin-bottom:8px">${esc(P.blurb)}</p><p class="tip">${esc(tip)}</p>${nx?`<p class="small muted" style="margin-top:8px">Next period around ${md(nx)} (${daysBetween(todayKey(),nx)} days).</p>`:""}<div class="chips" style="margin-top:10px">${pBtns.join("")}</div>${flowHtml}`,{cls:"tint",r:`day ${ci.day} of ~${ci.len}${ci.pred?" · est.":""}`});
     }else cycleCard=card("cycle","Cycle","moon",`<p class="small muted">Log the first day of your last period and the app will estimate your phase and offer a daily tip that fits.</p><div class="inl" style="margin-top:10px"><input type="date" id="pstart" value="${dk}" max="${todayKey()}"><button class="btn solid sm" data-act="periodAdd">Save</button></div><p class="small muted" style="margin-top:8px">Or turn cycle tracking off in Settings.</p>`,{cls:"tint"});
   }
 
@@ -713,7 +716,7 @@ function pToday(arg){
   const cards=[nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)],F=!!LS.focus;
 return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(bk(m.ph))}</span> ${phChip}`,nav)+
  (F?`<div class="focusnote"><i class="ph ph-crosshair"></i>focus mode: next up and your journal. nothing else.<button class="btn sm" data-act="focus">Show everything</button></div>`
- :`<div class="line"><i class="ph ph-quotes"></i><span class="cl">${calHtml(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${calHtml(m.line)}</span>`:""}</div>`)+
+ :`<div class="line"><img class="calmoth" src="calbert.png" alt="Calbert" title="Calbert"><span class="cl">${calHtml(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${calHtml(m.line)}</span>`:""}</div>`)+
  mu("today",F?cards.filter(h=>/data-id="(now|journal)"/.test(h)):cards);
 }
 function monthDone(mk){let n=0;Object.keys(st.days).forEach(k=>{if(k.startsWith(mk)&&dayStats(k).done)n++});return n}
@@ -723,12 +726,21 @@ const FACE=["","smiley-sad","smiley-nervous","smiley-meh","smiley","smiley-wink"
 const BATT=["","battery-empty","battery-low","battery-medium","battery-high","battery-full"];
 const JT=JBLOCKS.map(b=>[b[0],b[1],b[2].replace("ph-","")]);
 let jtab=JT[0][0];
-const safeHtml=h=>{const d=new DOMParser().parseFromString(`<div>${h||""}</div>`,"text/html"),r=d.body.firstChild;r.querySelectorAll("script,style,iframe,object,embed").forEach(n=>n.remove());r.querySelectorAll("*").forEach(n=>{[...n.attributes].forEach(a=>{const k=a.name;if(/^on/.test(k)||(k==="href"&&!/^(https?:|mailto:)/i.test(a.value))||(k==="src"&&!/^(data:image\/|https?:\/\/)/.test(a.value))||!/^(href|src|data-img|data-done|class|target|rel|alt|referrerpolicy|loading)$/.test(k))n.removeAttribute(k)});if(n.tagName==="A"){n.target="_blank";n.rel="noopener"}});return r.innerHTML};
-const rtbar=()=>`<div class="rtebar">${[["bold","text-b","Bold"],["italic","text-italic","Italic"],["underline","text-underline","Underline"],["todo","check-square","To-do"],["link","link","Link"],["imglink","globe","Image from link"]].map(([c,i,t])=>`<button class="rb" type="button" data-rt="${c}" title="${t}" aria-label="${t}"><i class="ph ph-${i}"></i></button>`).join("")}</div>`;
+const scopeCss=css=>{
+  css=String(css).replace(/\/\*[\s\S]*?\*\//g,"").replace(/@import[^;]*;?/gi,"").replace(/javascript:|expression\s*\(|behavior\s*:|-moz-binding/gi,"").replace(/position\s*:\s*fixed/gi,"position:absolute").replace(/url\(\s*(['"]?)(?!https:|data:image\/)[^)]*\)/gi,"none");
+  const SC=[".rte",".rt-view"],walk=s=>{let out="",i=0;while(i<s.length){const o=s.indexOf("{",i);if(o<0)break;const sel=s.slice(i,o).trim();let d=1,j=o+1;while(j<s.length&&d){if(s[j]==="{")d++;else if(s[j]==="}")d--;j++}const body=s.slice(o+1,j-1);i=j;
+    if(/^@(media|supports)/i.test(sel))out+=sel+"{"+walk(body)+"}";else if(sel[0]==="@")out+=sel+"{"+body+"}";
+    else out+=sel.split(",").flatMap(x=>{x=x.trim();if(/^\.(rte|rt-view)(\s|$|[.:#\[])/.test(x))return[x];return /^(html|body|:root)$/i.test(x)?SC:SC.map(p=>p+" "+x)}).join(",")+"{"+body+"}"}return out};
+  return walk(css);
+};
+const cleanStyle=v=>String(v).replace(/javascript:|expression\s*\(|behavior\s*:|-moz-binding/gi,"").replace(/position\s*:\s*fixed/gi,"").replace(/url\(\s*(['"]?)(?!https:|data:image\/)[^)]*\)/gi,"none");
+const SAFE_ATTR=/^(href|src|data-img|data-done|class|style|target|rel|alt|title|referrerpolicy|loading|width|height|colspan|rowspan|align|start|open|color|face|size)$/;
+const safeHtml=h=>{const d=new DOMParser().parseFromString(`<div>${h||""}</div>`,"text/html"),r=d.body.firstChild;r.querySelectorAll("script,iframe,object,embed,link,meta,base,form,frame,frameset,applet,noscript,template").forEach(n=>n.remove());r.querySelectorAll("style").forEach(n=>{n.textContent=scopeCss(n.textContent)});r.querySelectorAll("*").forEach(n=>{[...n.attributes].forEach(a=>{const k=a.name,v=a.value.trim();if(/^on/.test(k)||!SAFE_ATTR.test(k)||(k==="href"&&!/^(https?:|mailto:)/i.test(v))||(k==="src"&&!/^(data:image\/|https?:\/\/)/i.test(v)))n.removeAttribute(k);else if(k==="style")n.setAttribute("style",cleanStyle(a.value))});if(n.tagName==="A"){n.target="_blank";n.rel="noopener"}});return r.innerHTML};
 const rte=(p,ph,min)=>`<div class="rtewrap">${rtbar()}<div class="rte" contenteditable="true" data-rte="${p}" data-ph="${esc(ph)}" style="min-height:${min||150}px">${safeHtml(gp(p))}</div></div>`;
 function faceRow(f,v,ic,labels){return `<div class="faces">${[1,2,3,4,5].map(n=>`<button class="${v===n?"on":""}" data-act="rate" data-f="${f}" data-n="${n}" aria-label="${labels[n]}"><i class="ph${v===n?"-fill":""} ph-${ic[n]}"></i>${labels[n]}</button>`).join("")}</div>`}
-const FEEL_X=["calm","hopeful","proud","loved","energised","inspired","grateful","playful","confident","creative","content","focused","anxious","stressed","overwhelmed","sad","lonely","numb","angry","ashamed","restless","irritable","tired","foggy"];
-const feelHtml=dk=>`<div class="feels">${FEEL_X.map(f=>`<button class="chip ${gp(`days/${dk}/feel/${f}`)?"on":""}" data-act="feel" data-f="${f}">${f}</button>`).join("")}</div>`;
+const FEEL_G=[["bright",["calm","hopeful","proud","loved","energised","inspired","grateful","playful","confident","creative","content","focused","joyful","peaceful","excited","optimistic","motivated","relaxed","cozy","connected","safe","free","curious","romantic","nostalgic","silly","radiant","grounded"]],["soft",["tender","wistful","bittersweet","sentimental","sensitive","vulnerable","emotional","homesick","reflective","melancholy"]],["heavy",["anxious","stressed","overwhelmed","sad","lonely","numb","angry","ashamed","restless","irritable","tired","foggy","guilty","jealous","bored","hopeless","burnt out","panicky","insecure","frustrated","disappointed","empty","resentful","on edge","dread","unmotivated","touchy","withdrawn","scattered","drained"]]];
+const FEEL_X=FEEL_G.flatMap(g=>g[1]);
+const feelHtml=dk=>FEEL_G.map(([g,l])=>`<div class="feelg"><small>${g}</small><div class="feels">${l.map(f=>`<button class="chip ${gp(`days/${dk}/feel/${f}`)?"on":""}" data-act="feel" data-f="${f}">${f}</button>`).join("")}</div></div>`).join("");
 /* pinned images belong to the day: each day has its own pin cards (empty tomorrow, kept in the archive) */
 const dayPins=dk=>{const p=gp(`days/${dk}/pins`);return Array.isArray(p)?p:[]};
 const pinView=()=>LS.pinX||(LS.pinX={});
@@ -789,18 +801,21 @@ function repCard(w,i,rc){
 }
 function repHtml(w,mid){
   const rc=RECS[mid];
-  return card("report","Weekly R.E.P.O.R.T.","newspaper",`<div class="repwrap"><div class="rep3">${REP.map((_,i)=>`<div class="rc">${repCard(w,i,rc)}</div>`).join("")}</div></div>`,{cls:"s12",r:"the week in six snapshots"});
+  return card("report","Weekly R.E.P.O.R.T.","newspaper",`<div class="repwrap"><div class="rep3">${REP.map((_,i)=>`<div class="rc ${(gp(repKey(w,i)+"/t")||"").length>240?"wide":""}">${repCard(w,i,rc)}</div>`).join("")}</div></div>`,{cls:"s12",r:"the week in six snapshots"});
 }
 
 /* call this at the END of render() */
+const FS=!!(window.CSS&&CSS.supports&&CSS.supports("field-sizing","content"));
+function fitTa(t){t.style.height="auto";if(!FS)t.style.height=t.scrollHeight+"px";else t.style.height=""}
+window.addEventListener("resize",()=>{clearTimeout(window._rg);window._rg=setTimeout(repGrow,120)});
 function repGrow(){
-  document.querySelectorAll(".rcard textarea[data-grow]").forEach(t=>{t.style.height="auto";t.style.height=t.scrollHeight+"px"});
+  document.querySelectorAll(".rcard textarea[data-grow]").forEach(fitTa);
   const f=document.querySelector(".rcard [data-autofocus]");
   if(f){f.removeAttribute("data-autofocus");f.focus({preventScroll:true})}
 }
 document.addEventListener("input",e=>{
   const t=e.target;
-  if(t.matches&&t.matches(".rcard textarea[data-grow]")){t.style.height="auto";t.style.height=t.scrollHeight+"px";if(window.muRefresh)muRefresh()}
+  if(t.matches&&t.matches(".rcard textarea[data-grow]")){const rcc=t.closest(".rc");if(rcc)rcc.classList.toggle("wide",t.value.length>240);fitTa(t);if(window.muRefresh)muRefresh()}
 });
 
 function repZoom(u,c){
@@ -851,12 +866,12 @@ function dayParts(k){const s=dayStats(k),d=s.d,wg=+st.settings.waterGoal||8,j=Ob
 function phaseAvg(ph){const L=loggedDays().filter(k=>{const c=cycleInfo(k);return c&&c.ph===ph}).map(dayStats);return insAvg(L)}
 
 function pWeek(arg){
-  const k=DATE_RE.test(arg)?arg:todayKey(),days=weekDays(k),wk=isoWeek(k),w=`weeks/${wk}`;
+  const k=DATE_RE.test(arg)?arg:todayKey(),days=weekDays(k),wk=isoWeek(k),w=`weeks/${wk}`;wpW=w;
   const S=days.map(dayStats),L=["M","T","W","T","F","S","S"];
   const wg=+st.settings.waterGoal||8,sgs=days.map(stepGoalFor),logged=S.filter(s=>s.has);
   const aSteps=avg(S.filter(s=>s.steps).map(s=>s.steps)),aSleep=avg(S.filter(s=>s.sleep).map(s=>s.sleep)),aWater=avg(S.filter(s=>s.water).map(s=>s.water));
   const aMood=avg(S.filter(s=>s.mood).map(s=>s.mood)),aEn=avg(S.filter(s=>s.energy).map(s=>s.energy)),aKcal=avg(S.filter(s=>s.kcal).map(s=>s.kcal));
-  const showed=S.filter(s=>s.done).length;
+  const showed=S.filter(s=>s.done).length,wdc=S.filter(s=>s.weed==="y").length;
   const prev=weekDays(addDays(days[0],-7)),next=weekDays(addDays(days[0],7)),pw=`weeks/${isoWeek(prev[0])}`;
   const cur=monday(todayKey()),rel=days[0]===cur?"this week":days[0]<cur?"a past week":"an upcoming week";
   const strip=days.map((dk,i)=>{const s=S[i],ci=cycleInfo(dk),f=FACE[s.mood];return`<a class="day ${dk===todayKey()?"today":""}" href="#today/${dk}" ${ci?`style="background:hsl(${PHASES[ci.ph].hue} 40% 50%/.12)"`:""}><b>${L[i]}</b><div class="d num">${parse(dk).getDate()}</div><div class="face">${f?`<i class="ph-fill ph-${f}"></i>`:""}</div><div class="pips"><i class="pip ${s.done?"on":""}"></i><i class="pip ${s.water>=wg?"on":""}"></i><i class="pip ${s.steps>=sgs[i]?"on":""}"></i><i class="pip ${s.mealsLogged?"on":""}"></i></div></a>`}).join("");
@@ -890,13 +905,13 @@ const lg=days.map((dk,i)=>({dk,i,n:P[i].filter(Boolean).length})).filter(x=>past
 const best=[...lg].sort((a,b)=>b.n-a.n||b.dk.localeCompare(a.dk))[0],worst=lg.length>1?[...lg].sort((a,b)=>a.n-b.n||a.dk.localeCompare(b.dk))[0]:null;
 const wd=dk=>parse(dk).toLocaleDateString(undefined,{weekday:"long"}),lst=(x,v)=>PARTS.filter((_,j)=>!!P[x.i][j]===v).join(", ")||"none";
 const hl=best?`<p class="small" style="margin-top:10px"><b>best</b> ${wd(best.dk)} · ${best.n}/7 <small class="muted">${lst(best,true)}</small>${worst?` <br><b>hardest</b> ${wd(worst.dk)} · ${worst.n}/7 <small class="muted">missed ${lst(worst,false)}. a data point, not a verdict.</small>`:""}</p>`:`<p class="small muted" style="margin-top:10px">log a couple of days and the best and hardest will show up here.</p>`;
-const hero=card("whero","Week at a glance","sparkle",`<div class="whero"><div class="ring xl" style="--p:${score}"><b>${score}<small>score</small></b></div><div><div class="verdict">${verdict}</div><div class="streak">${strk}</div><div class="chips" style="margin-top:12px">${showed===7?chip('<i class="ph-fill ph-crown"></i> perfect week',1):""}${chip(showed+"/7 showed up",showed>=4)}${chip(r0(aSteps)+" avg steps")}${chip(r1(aSleep)+"h sleep")}</div>${hl}</div><div class="run num">${ss.run}<small>day run${ss.run===1?"":"s"}</small><small style="margin-top:6px">best ${ss.best}</small></div></div>`,{cls:"glow s12",r:rel});
+const hero=card("whero","Week at a glance","sparkle",`<div class="whero"><div class="ring xl" style="--p:${score}"><b>${score}<small>score</small></b></div><div><div class="verdict">${verdict}</div><div class="streak">${strk}</div><div class="chips" style="margin-top:12px">${showed===7?chip('<i class="ph-fill ph-crown"></i> perfect week',1):""}${chip(showed+"/7 showed up",showed>=4)}${chip(r0(aSteps)+" avg steps")}${chip(r1(aSleep)+"h sleep")}${wdc?chip("🌿 "+wdc+" weed day"+(wdc===1?"":"s")):""}</div>${hl}</div><div class="run num">${ss.run}<small>day run${ss.run===1?"":"s"}</small><small style="margin-top:6px">best ${ss.best}</small></div></div>`,{cls:"glow s12",r:rel});
 const tl=todoOf(w),tdn=tl.filter(x=>x.x).length,pv=todoOf(pw).filter(x=>!x.x);
 const todoCard=card("wtodo","To-do this week","check-square",`${bar(tdn,tl.length)}<ul class="todo" style="margin-top:8px">${tl.map(x=>`<li class="${x.x?"done":""}"><input type="checkbox" data-act="todoTog" data-w="${w}" data-id="${esc(x.id)}" ${x.x?"checked":""} aria-label="done"><span>${esc(x.t)}</span>${x.d?`<small class="muted">${esc(DN[(parse(x.d).getDay()+6)%7])}</small>`:""}<button class="tx" data-act="todoDel" data-w="${w}" data-id="${esc(x.id)}">remove</button></li>`).join("")}</ul>
  <div class="inl"><input type="text" id="todoT" placeholder="add a task…"><select id="todoD" style="width:auto"><option value="">any day</option>${days.map(dk=>`<option value="${dk}">${esc(short(dk))}</option>`).join("")}</select><button class="btn solid sm" data-act="todoAdd" data-w="${w}">Add</button></div>${pv.length?`<button class="btn sm ghost" style="margin-top:8px" data-act="todoCarry" data-w="${w}" data-pw="${pw}">Carry over ${pv.length} from last week</button>`:""}`,{cls:"s6",r:`${tdn}/${tl.length}`});
 return head("Week",`<span class="tag">${rel}</span>${esc(rng(days))}, ${parse(days[6]).getFullYear()}`,nav)+
  `<div class="wk">${strip}</div><div class="legend" style="margin:8px 0 14px"><span style="--lc:var(--acc)">dots: rituals · water · steps · food logged</span></div>`+
- mu("week",[hero,todoCard,wCard,statsCard,chartsCard,recapCard,repHtml(w,days[0].slice(0,7)),reviewCard,planCard]);
+ mu("week",[hero,todoCard,wCard,statsCard,chartsCard,recapCard,repHtml(w,days[0].slice(0,7)),...wpCards(w),reviewCard,planCard]);
 }
 /* ============================================================ MONTH */
 function evCard(id){
@@ -910,17 +925,17 @@ const JF=[["j_anchor","anchor"],["j_reflect","reflect"],["j_shadow","shadow"],["
 function monthTexts(id,keys){
   const o=[],wk=[...new Set(keys.map(isoWeek))];
   keys.forEach(k=>{const d=st.days[k];if(!d)return;[...JF.map(x=>x[0]),"win","grat"].forEach(f=>d[f]&&o.push(["journal · "+md(k),d[f]]))});
-  wk.forEach(x=>{const w=st.weeks[x];if(!w)return;["win1","win2","win3","slid","energy","shadow","ideal"].forEach(f=>w[f]&&o.push(["week review",w[f]]));Object.values(w.rep||{}).forEach(r=>r&&r.t&&o.push(["R.E.P.O.R.T.",r.t]))});
+  wk.forEach(x=>{const w=st.weeks[x];if(!w)return;["win1","win2","win3","slid","energy","shadow","ideal"].forEach(f=>w[f]&&o.push(["week review",w[f]]));Object.values(w.rep||{}).forEach(r=>r&&r.t&&o.push(["R.E.P.O.R.T.",r.t]));(w.pins||[]).forEach(p=>[p.b,p.i].filter(Boolean).forEach(t=>o.push(["week pin",t])))});
   const mo=st.months[id]||{};["taught","shadow","forward","note","intent"].forEach(f=>mo[f]&&o.push(["reflection",mo[f]]));
   return o;
 }
 function monthTitles(id){
   const r=RECS[id]||{},raw=[r.fic,r.non,...[].concat(r.film||[]),...[].concat(r.listen||[])].filter(Boolean),t=new Set();
-  raw.forEach(s=>String(s).split(/ by | — |\(|\)/).forEach(x=>{x=x.trim();if(x.length>3)t.add(x.toLowerCase())}));return[...t];
+  raw.forEach(s=>String(s).split(/ by | — |\(|\)/).forEach(x=>{x=x.trim();if(x.length>3&&!/^[\d\s]+$/.test(x))t.add(x.toLowerCase())}));return[...t];
 }
 function monthSnips(id,keys){
-  const ts=monthTitles(id),res=[];
-  monthTexts(id,keys).forEach(([src,h])=>(stripH(h).match(/[^.!?]+[.!?]*/g)||[]).forEach(s=>{s=s.trim();if(s.length<12)return;const l=s.toLowerCase(),t=ts.find(x=>new RegExp("(^|[^a-z])"+x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"([^a-z]|$)").test(l));if(t)res.push({s,src,t})}));
+  const rx=monthTitles(id).map(x=>[x,new RegExp("(^|[^a-z0-9])"+rxEsc(x)+"(?=[^a-z0-9]|$)","i")]),seen=new Set(),res=[];
+  monthTexts(id,keys).forEach(([src,h])=>paras(h).forEach(p=>{const m=rx.find(([,r])=>r.test(p));if(m&&!seen.has(p)){seen.add(p);res.push({s:p,src,t:m[0]})}}));
   return res.slice(0,8);
 }
 function pickDay(keys){
@@ -957,9 +972,9 @@ function pMonth(arg){
   const rc=RECS[id];
   if(rc||m){const r=rc||{};bookCard=card("mbooks","Books · film · listen","books",`${[["book-open-text","Fiction",r.fic],["lightbulb","Nonfiction",r.non],["film-slate","Films",r.film],["headphones","Albums",r.listen]].filter(x=>x[2]).map(([i,k,v])=>`<div class="pick"><i class="ph ph-${i}"></i><div class="k">${k}</div><div class="v">${Array.isArray(v)?v.map(esc).join("<br>"):esc(v)}</div></div>`).join("")}${r.why?`<p class="small" style="margin-top:8px"><i>${esc(r.why)}</i></p>`:""}${m?`<ul class="l" style="margin-top:8px">${m.rw.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="note" style="margin-top:10px"><b>If this month slides:</b> ${esc(m.slip)}</div>`:""}`,{cls:"s5"})}
   const sn=monthSnips(id,keys);
-  const snipCard=card("msnip","Echoes","quotes",sn.length?sn.map(x=>`<div class="snip"><small>${esc(x.src)} · ${esc(x.t)}</small>${esc(x.s)}</div>`).join(""):`<p class="small muted">Mention this month’s books, films or albums in your journal, REPORT or reflection and the lines turn up here.</p>`,{cls:"s6",r:`${sn.length}`});
+  const snipCard=card("msnip","Echoes","quotes",sn.length?sn.map(x=>`<div class="snip"><small>${esc(x.src)} · ${esc(x.t)}</small>${hi(x.s,x.t)}</div>`).join(""):calb("Mention this month’s books, films or albums in your journal, REPORT or reflection and the whole paragraph turns up here."),{cls:"s6",r:`${sn.length}`});
   const rk=pickDay(keys),rd=rk?st.days[rk]:null;
-  const randCard=card("mrandom","From the drawer","archive",rk?`<p class="small muted" style="margin-bottom:4px">${esc(pretty(rk))}</p>${JF.filter(f=>stripH(rd[f[0]])).map(([f,l])=>`<div class="rt-view"><b>${l}</b>${safeHtml(rd[f])}</div>`).join("")}<a class="btn sm" href="#today/${rk}" style="margin-top:6px">Open that day →</a>`:`<p class="small muted">Write a journal entry this month and a random one will surface here.</p>`,{cls:"s6",r:rk?`<button class="tx" data-act="rnd">another</button>`:""});
+  const randCard=card("mrandom","From the drawer","archive",rk?`<p class="small muted" style="margin-bottom:4px">${esc(pretty(rk))}</p>${JF.filter(f=>stripH(rd[f[0]])).map(([f,l])=>`<div class="rt-view"><b class="rtl">${l}</b>${safeHtml(rd[f])}</div>`).join("")}<a class="btn sm" href="#today/${rk}" style="margin-top:6px">Open that day →</a>`:calb("Write a journal entry this month and a random one will surface here."),{cls:"s6",r:rk?`<button class="tx" data-act="rnd">another</button>`:""});
   const mood=+gp(p+"/mood")||0,mo3=[0,1,2].map(i=>gp(p+"/mo/"+i)).filter(Boolean);
   const RS=[["intent","Intention","One sentence. How should this month feel?",txt(p+"/intent","this month I’m…")],["taught","What this month taught me","What would you tell yourself on the first? Plainly, without the apology.",rte(p+"/taught","write it out…",100)],["shadow","Shadow and growth","Which pattern turned up again, and what was different this time?",rte(p+"/shadow","the pattern was…",100)],["forward","Carrying forward","What comes with you, and what stays here? Pack light.",rte(p+"/forward","keep… / leave…",100)]];
   const reflect=card("mreflect","Month reflection","notebook",`<label class="f" style="margin-top:0">Mood of the month <span class="muted">${MOODS[mood]||""}</span></label><div class="mmood">${[1,2,3,4,5].map(n=>`<button class="chip ${mood===n?"on":""}" data-act="mmood" data-m="${id}" data-n="${n}"><i class="ph${mood===n?"-fill":""} ph-${FACE[n]}"></i>${MOODS[n]}</button>`).join("")}</div>
@@ -1014,7 +1029,7 @@ function pVision(){
   const it=visOf();
   return head("Vision","a moodboard of where you’re going. links only, so it follows you everywhere.",`<span class="muted small num">${it.length} picture${it.length===1?"":"s"}</span>`).replace("<h1>",`<h1 class="ghost" data-ghost="muse">`)+
    `<div class="addpic"><input type="url" id="vU" placeholder="paste an image link (https://…)" aria-label="image link"><input type="text" class="cap" id="vC" placeholder="caption (optional)" aria-label="caption"><button class="btn solid" data-act="visAdd"><i class="ph ph-plus"></i>Add picture</button></div>`+
-   (it.length?`<div class="mood">${it.map(v=>`<figure class="mtile"><img src="${esc(v.u)}" alt="${esc(v.c||"")}" loading="lazy" referrerpolicy="no-referrer" onerror="var f=this.parentNode;f.classList.add('broken');this.replaceWith(document.createTextNode('couldn’t load this link'))"><figcaption data-act="visCap" data-id="${esc(v.id)}">${esc(v.c||"add a caption")}</figcaption><button class="x" data-act="visDel" data-id="${esc(v.id)}" aria-label="Remove"><i class="ph ph-x"></i></button></figure>`).join("")}</div>`:`<div class="vempty">nothing on the board yet. paste a link above and pin something that looks like where you’re going.</div>`);
+   (it.length?`<div class="mood">${it.map(v=>`<figure class="mtile"><img data-act="visZoom" data-u="${esc(v.u)}" data-c="${esc(v.c||"")}" src="${esc(v.u)}" alt="${esc(v.c||"")}" loading="lazy" referrerpolicy="no-referrer" onerror="var f=this.parentNode;f.classList.add('broken');this.replaceWith(document.createTextNode('couldn’t load this link'))"><figcaption data-act="visCap" data-id="${esc(v.id)}">${esc(v.c||"add a caption")}</figcaption><button class="x" data-act="visDel" data-id="${esc(v.id)}" aria-label="Remove"><i class="ph ph-x"></i></button></figure>`).join("")}</div>`:`<div class="vempty"><img src="calbert.png" alt="">nothing on the board yet. paste a link above and pin something that looks like where you’re going.</div>`);
 }
 
 /* ============================================================ ARCHIVE extras */
@@ -1061,6 +1076,7 @@ function archInsights(){
   return`<div class="cols c2"><div class="col">
    ${icard("Sleep → energy and mood",sl.some(x=>x.e!=null)?hbars(sl.flatMap(x=>[[x.l+" · energy",x.e,x.n+"d"],[x.l+" · mood",x.m,""]])):NEED,sleepNote||"Log sleep, energy and mood for a couple of weeks.")}
    ${icard("Yesterday’s steps and water → today",dayRows.length?hbars(dayRows):NEED,"Average energy the next day, depending on whether you hit the goal.")}
+   ${weedCard(ks,S)}
    ${icard("Energy and mood by phase",phRows.length?hbars(phRows):NEED)}
   </div><div class="col">
    ${icard("Your familiars",tiered.length?hbars(famRows.map(r=>[r[0],r[1],r[2]]),Math.max(1,...famRows.map(r=>r[1])))+`<div class="chips" style="margin-top:8px">${famPh}</div>`+(moth.length?`<p class="small" style="margin-top:10px"><b>${ms}</b> of your <b>${moth.length}</b> Moth days still earned a star (${Math.round(ms/moth.length*100)}%).${ms?" A Moth day counts in full.":""}</p>`:""):NEED)}
@@ -1082,7 +1098,7 @@ function archWeeks(){
   const ws=Object.keys(set).sort().reverse();
   if(!ws.length)return`<p class="muted">Nothing in the drawer yet. Weeks appear here once you log days or a weigh-in.</p>`;
   return`<div class="arch">${ws.map(mo=>{const days=weekDays(mo),S=days.map(dayStats),w=weekWeight(mo),wk=isoWeek(mo),rv=st.weeks[wk]||{};
-    return`<a class="arow" href="#week/${mo}"><b>${md(mo)} – ${md(days[6])}</b><div class="chips">${chip(S.filter(s=>s.done).length+"/7 showed up",S.filter(s=>s.done).length>=4)}${chip(r0(avg(S.filter(s=>s.steps).map(s=>s.steps)))+" avg steps")}${chip(r1(avg(S.filter(s=>s.sleep).map(s=>s.sleep)))+"h sleep")}${w?chip("weigh-in "+w.w,1):""}${rv.win1?chip("review written"):""}</div><span class="muted small">${esc(rv.win1||"")}</span></a>`}).join("")}</div>`;
+    return`<a class="arow" href="#week/${mo}"><b>${md(mo)} – ${md(days[6])}</b><div class="chips">${chip(S.filter(s=>s.done).length+"/7 showed up",S.filter(s=>s.done).length>=4)}${chip(r0(avg(S.filter(s=>s.steps).map(s=>s.steps)))+" avg steps")}${chip(r1(avg(S.filter(s=>s.sleep).map(s=>s.sleep)))+"h sleep")}${w?chip("weigh-in "+w.w,1):""}${rv.win1?chip("review written"):""}${(rv.pins||[]).length?chip("📌 "+rv.pins.length+" pin"+(rv.pins.length===1?"":"s")):""}</div><span class="muted small">${esc(rv.win1||"")}</span></a>`}).join("")}</div>`;
 }
 function archMonths(){
   const ks=loggedDays();const set={};ks.forEach(k=>set[k.slice(0,7)]=1);st.weights.forEach(w=>set[w.d.slice(0,7)]=1);Object.keys(st.months).forEach(k=>set[k]=1);set[mkey(new Date())]=1;
@@ -1173,24 +1189,32 @@ function pSettings(){
 /* events */
 let lastRange=null,rtTarget=null;
 document.addEventListener("selectionchange",()=>{const s=getSelection();if(s.rangeCount&&s.anchorNode&&s.anchorNode.parentElement&&s.anchorNode.parentElement.closest("[data-rte]"))lastRange=s.getRangeAt(0).cloneRange()});
-document.addEventListener("mousedown",e=>{if(e.target.closest("[data-rt]"))e.preventDefault()});
+document.addEventListener("mousedown",e=>{if(e.target.closest("[data-rt],[data-rtcol]"))e.preventDefault()});
 document.addEventListener("click",e=>{
   const j=e.target.closest('[data-act="jtab"]');if(j){jtab=j.dataset.v;render();return}
+  if(!e.target.closest(".rtc"))document.querySelectorAll(".rtpop").forEach(p=>p.hidden=true);
   const td=e.target.closest(".td");if(td&&e.target.closest("[data-rte]")&&e.offsetX<28){td.dataset.done=td.dataset.done==="1"?"0":"1";saveRte(td.closest("[data-rte]"));return}
+  const sw=e.target.closest("[data-rtcol]");
+  if(sw){const wrap=sw.closest(".rtewrap"),f=sw.dataset.rtk==="fore";rtRun(wrap.querySelector("[data-rte]"),()=>rtX(f?"foreColor":"hiliteColor",sw.dataset.rtcol||(f?"inherit":"transparent"),1));wrap.querySelectorAll(".rtpop").forEach(p=>p.hidden=true);return}
   const b=e.target.closest("[data-rt]");if(!b)return;
-  const ed=b.closest(".rtewrap").querySelector("[data-rte]");ed.focus();
-  if(lastRange&&ed.contains(lastRange.startContainer)){const s=getSelection();s.removeAllRanges();s.addRange(lastRange)}
-  const c=b.dataset.rt;
-  if(["bold","italic","underline"].includes(c))document.execCommand(c);
-  else if(c==="todo")document.execCommand("insertHTML",false,'<div class="td" data-done="0">&#8203;</div>');
-  else if(c==="link"){const u=prompt("Link URL");if(u)document.execCommand("createLink",false,/^(https?:|mailto:)/.test(u)?u:"https://"+u)}
-  else if(c==="imglink"){const u=prompt("Image link (https://…)");if(u&&/^https?:\/\//.test(u))document.execCommand("insertHTML",false,`<img src="${u.replace(/["<>]/g,"")}" alt="" referrerpolicy="no-referrer" loading="lazy"><br>`)}
-  
-  saveRte(ed);
+  const wrap=b.closest(".rtewrap"),ed=wrap.querySelector("[data-rte]"),c=b.dataset.rt;
+  if(c==="pop"){const p=wrap.querySelector(`.rtpop[data-pop="${b.dataset.pop}"]`),was=!p.hidden;wrap.querySelectorAll(".rtpop").forEach(x=>x.hidden=true);p.hidden=was;return}
+  if(c==="code"){rtCode(wrap);return}
+  rtRun(ed,()=>{
+    if(["bold","italic","underline"].includes(c))rtX(c);
+    else if(RTB[c]){const cur=(document.queryCommandValue("formatBlock")||"").toLowerCase().replace(/[<>]/g,"");rtX("formatBlock",cur===RTB[c]&&c!=="p"?"<p>":"<"+RTB[c]+">")}
+    else if(c==="ul")rtX("insertUnorderedList");else if(c==="ol")rtX("insertOrderedList");
+    else if(c==="hr")rtX("insertHTML","<hr><p><br></p>");
+    else if(c==="clear"){rtX("removeFormat");rtX("formatBlock","<p>")}
+    else if(c==="todo")rtX("insertHTML",'<div class="td" data-done="0">&#8203;</div>');
+    else if(c==="link"){const u=prompt("Link URL");if(u)rtX("createLink",/^(https?:|mailto:)/.test(u)?u:"https://"+u)}
+    else if(c==="imglink"){const u=prompt("Image link (https://…)");if(u&&/^https?:\/\//.test(u))rtX("insertHTML",`<img src="${u.replace(/["<>]/g,"")}" alt="" referrerpolicy="no-referrer" loading="lazy"><br>`)}
+  });
 });
 function saveRte(ed){if(!ed)return;const h=ed.innerHTML.replace(/ src="data:[^"]*"/g,m=>m);sp(ed.dataset.rte,h==="<br>"?"":h.replace(/(<img[^>]*data-img[^>]*?) src="[^"]*"/g,"$1"));save()}
 document.addEventListener("input",e=>{
   const t=e.target;
+  if(t.classList&&t.classList.contains("rtecode")){sp(t.dataset.rtp,safeHtml(rtTidy(t.value)));save();return}
   if(t.matches&&t.matches("[data-rte]")){saveRte(t);return}
   if(t.dataset&&t.dataset.meal){
     const dk=curDay(),id=t.dataset.meal,e2=estimateMeal(t.value),kp=`days/${dk}/meals/${id}/k`,ap=`days/${dk}/meals/${id}/ka`;
@@ -1231,8 +1255,149 @@ document.addEventListener("click",e=>{
   else if(a==="mmood"){sp(`months/${D.m}/mood`,(+gp(`months/${D.m}/mood`)||0)===+D.n?0:+D.n);save();render()}
   else if(a==="rnd"){LS.rnd=Math.random();persistLocal();render()}
   else if(a==="print")window.print();
+  else if(a==="visZoom")repZoom(D.u,D.c);
 });
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.target.id==="vU"||e.target.id==="vC")){e.preventDefault();const b=document.querySelector('[data-act="visAdd"]');b&&b.click()}});
+
+/* ============================================================
+   v14 additions: editor, body tracking, Calbert live line, week pins, echoes
+   ============================================================ */
+
+/* ---- Calbert's line reacts to what you log today ---- */
+function calEvt(k){st.notes.calEv={k,t:Date.now(),d:todayKey()};st.su.notes=Date.now()}
+function calNote(p,v){
+  const m=/^days\/(\d{4}-\d\d-\d\d)\/(.+)$/.exec(p);if(!m||m[1]!==todayKey())return;const f=m[2];let k=null;
+  if(/^t3d\d$/.test(f)&&v)k="errand";else if(/^rit\//.test(f)&&v)k="rituals";else if(f==="sleep"&&+v>0)k="sleep";
+  else if(f==="tier"&&v==="bonfire")k="bonfire";else if(f==="flow"&&v)k="period";
+  if(k)calEvt(k);
+}
+function lineRefresh(){
+  const el=document.querySelector(".line .cl");if(!el||R().name!=="today")return;
+  const dk=curDay(),m=monthNear(dk),q=calLine(dk)||LINES[Math.floor(parse(dk)/864e5)%LINES.length]||m.line,h=calHtml(q);
+  if(el.innerHTML===h)return;
+  el.innerHTML=h;const mo=document.querySelector(".line .calmoth");if(mo){mo.classList.remove("flap");void mo.offsetWidth;mo.classList.add("flap")}
+}
+setInterval(lineRefresh,60000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")lineRefresh()});
+
+/* ---- sleep times ---- */
+const hm=v=>{const m=/^(\d\d):(\d\d)/.exec(v||"");return m?+m[1]*60+ +m[2]:null};
+const sleepMin=d=>{const a=hm(d.bed),b=hm(d.wake);if(a==null||b==null)return null;let m=b-a;if(m<=0)m+=1440;return m};
+const sleepTxt=d=>{const m=sleepMin(d);return m==null?"log both times and I’ll work out the hours":`${Math.floor(m/60)}h ${m%60}m asleep`};
+const sleepTimes=(dk,d)=>`<div class="row sleept"><div><label class="f">Went to bed <span class="muted">(last night)</span></label><div class="inl"><input type="time" ${B(`days/${dk}/bed`)} value="${esc(d.bed||"")}" aria-label="bedtime"><button class="tx" data-act="tnow" data-f="bed">now</button></div></div><div><label class="f">Woke up</label><div class="inl"><input type="time" ${B(`days/${dk}/wake`)} value="${esc(d.wake||"")}" aria-label="wake time"><button class="tx" data-act="tnow" data-f="wake">now</button></div></div></div><div class="small muted" id="sleepAuto" style="margin-top:4px">${sleepTxt(d)}</div>`;
+function autoSleep(dk){
+  const d=st.days[dk]||{},m=sleepMin(d);
+  if(m!=null){
+    const h=Math.round(m/6)/10;
+    if(!d.sleep||+d.sleep===+d.sleepA)sp(`days/${dk}/sleep`,h);
+    sp(`days/${dk}/sleepA`,h);
+    if(dk===curDay()){const si=document.querySelector(`[data-k="days/${dk}/sleep"]`);if(si)si.value=h;liveUpdate()}
+  }
+  const el=$("sleepAuto");if(el&&dk===curDay())el.textContent=sleepTxt(d);
+}
+const weedHtml=d=>`<label class="f">🌿 Weed today <span class="muted">${d.weed==="y"?"yes":d.weed==="n"?"no":"not logged"}</span></label><div class="seg wseg">${[["y","Yes"],["n","No"]].map(([v,l])=>`<button class="${d.weed===v?"on":""}" data-act="weed" data-v="${v}">${l}</button>`).join("")}</div>`;
+function symBody(dk){
+  const on=k=>!!gp(`days/${dk}/sym/${k}`),ch=([k,l])=>`<button class="chip ${on(k)?"on":""}" data-act="sym" data-s="${k}">${l}</button>`,more=SYMPTOMS.slice(15);
+  return `<label class="f">Symptoms &amp; body notes</label><div class="chips">${SYMPTOMS.slice(0,15).map(ch).join("")}</div><details class="symmore" ${more.some(x=>on(x[0]))?"open":""}><summary><span class="ml" style="font-size:.85rem">more symptoms</span></summary><div class="chips" style="margin-top:8px">${more.map(ch).join("")}</div></details>`;
+}
+function weedCard(ks,S){
+  const Y=ks.filter(k=>S[k].d.weed==="y").map(k=>S[k]),N=ks.filter(k=>S[k].d.weed==="n").map(k=>S[k]);
+  if(!Y.length&&!N.length)return icard("Weed days vs. not",NEED,"Tap yes or no under Today → Body.");
+  const a=insAvg(Y),b=insAvg(N),m=(L,f)=>{const v=nums(L.map(f).filter(x=>x>0));return v.length?avg(v):null};
+  const rows=[["weed · energy",a.e,a.n+"d"],["weed · mood",a.m,""],["no weed · energy",b.e,b.n+"d"],["no weed · mood",b.m,""]].filter(r=>r[1]!=null);
+  const ln=(l,L)=>L.length?`<b>${l}</b>: ${L.length} day${L.length===1?"":"s"} · avg sleep ${r1(m(L,s=>s.sleep))}h · ${r0(m(L,s=>s.steps))} steps`:"";
+  return icard("Weed days vs. not",(rows.length?hbars(rows):"<p class='small muted'>Energy and mood need a few more logged days on each side.</p>")+`<p class="small" style="margin-top:10px">${[ln("Yes",Y),ln("No",N)].filter(Boolean).join("<br>")}</p>`,"A pattern spotter, never a verdict.");
+}
+
+/* ---- rich text editor v2 ---- */
+const RTF=["Manrope","Cormorant Garamond","Cutive Mono","Pinyon Script","Caveat","Playfair Display","Lora","Special Elite"];
+const RTC=["#e5484d","#f08a24","#f2c94c","#4caf7d","#3fb8c4","#5b8cff","#a06bff","#e56bb0","#ffffff","#9a9aa5","#1b1b22"];
+const RTB={h1:"h1",h2:"h2",h3:"h3",quote:"blockquote",p:"p"};
+const rtpal=k=>`<div class="rtpop" data-pop="${k}" hidden>${HOUSES.map(h=>`hsl(${h[2]} ${h[3]+25}% 60%)`).concat(RTC).map(c=>`<button type="button" data-rtcol="${c}" data-rtk="${k}" style="background:${c}" aria-label="${c}"></button>`).join("")}<label class="rtcust" title="any colour">+<input type="color" data-rtcustom="${k}" value="#ff6fa8"></label><button type="button" class="rtnone" data-rtcol="" data-rtk="${k}">clear</button></div>`;
+const rtbar=()=>{
+  const b=(c,l,t,x="")=>`<button class="rb ${x}" type="button" data-rt="${c}" title="${t}" aria-label="${t}">${l}</button>`,ic=n=>`<i class="ph ph-${n}"></i>`,sep='<span class="sep"></span>';
+  return `<div class="rtebar"><select class="rtfont" data-rtfont title="Font" aria-label="Font"><option value="">Font</option>${RTF.map(f=>`<option value="${f}" style="font-family:'${f}'">${f}</option>`).join("")}</select>${sep}`
+  +b("bold",ic("text-b"),"Bold")+b("italic",ic("text-italic"),"Italic")+b("underline",ic("text-underline"),"Squiggle underline")+sep
+  +b("h1","H1","Heading 1")+b("h2","H2","Heading 2")+b("h3","H3","Heading 3")+b("p","¶","Normal text")+sep
+  +b("ul",ic("list-bullets"),"Bulleted list")+b("ol","1.","Numbered list")+b("quote","❝","Quote")+b("hr","—","Divider")+sep
+  +`<span class="rtc"><button class="rb" type="button" data-rt="pop" data-pop="fore" title="Text colour" aria-label="Text colour"><span class="rtA">A</span></button>${rtpal("fore")}</span><span class="rtc"><button class="rb" type="button" data-rt="pop" data-pop="back" title="Highlight colour" aria-label="Highlight colour"><span class="rtA hl">ab</span></button>${rtpal("back")}</span>`+sep
+  +b("todo",ic("check-square"),"To-do")+b("link",ic("link"),"Link")+b("imglink",ic("globe"),"Image from link")+b("clear","Tx","Clear formatting")+b("code","&lt;/&gt;","HTML / CSS view","rbcode")+`</div>`;
+};
+const rtEd=el=>el.closest(".rtewrap").querySelector("[data-rte]");
+function rtRun(ed,fn){ed.focus();if(lastRange&&ed.contains(lastRange.startContainer)){const s=getSelection();s.removeAllRanges();s.addRange(lastRange)}fn();saveRte(ed)}
+const rtX=(cmd,val,css)=>{try{document.execCommand("styleWithCSS",false,!!css)}catch(e){}document.execCommand(cmd,false,val)};
+const rtTidy=s=>s.replace(/(<\/(?:p|div|h[1-6]|li|ul|ol|blockquote|style)>)\s*\n/gi,"$1");
+function rtCode(wrap){
+  const ed=wrap.querySelector("[data-rte]");let ta=wrap.querySelector(".rtecode");
+  if(ta){ed.innerHTML=safeHtml(rtTidy(ta.value));ta.remove();ed.hidden=false;wrap.classList.remove("code");saveRte(ed)}
+  else{ta=document.createElement("textarea");ta.className="rtecode";ta.spellcheck=false;ta.dataset.rtp=ed.dataset.rte;
+    ta.placeholder="HTML + CSS. Inline styles, classes and <style> blocks all work. Scripts and on… handlers are removed on save.";
+    ta.value=ed.innerHTML.replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote|style)>/gi,"$&\n");ta.style.minHeight=ed.style.minHeight;
+    ed.hidden=true;wrap.appendChild(ta);wrap.classList.add("code");ta.focus()}
+}
+
+/* ---- echoes: the whole paragraph that mentions the book / film / album / author ---- */
+const paras=h=>String(h||"").replace(/<style[\s\S]*?<\/style>/gi,"").replace(/<\/(p|div|h[1-6]|li|blockquote|ul|ol|tr)>|<br\s*\/?>/gi,"\n").replace(/<[^>]*>/g,"").replace(/&nbsp;|&#8203;|​/g," ").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").split(/\n+/).map(s=>s.replace(/\s+/g," ").trim()).filter(s=>s.length>=12);
+const rxEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const hi=(s,t)=>s.split(new RegExp("("+rxEsc(t)+")","ig")).map((x,i)=>i%2?`<mark>${esc(x)}</mark>`:esc(x)).join("");
+
+/* ---- week pins: 1 to 3 typed cards, saved to the week ---- */
+const WPT=[["img","image link","images-square"],["note","note","note"],["link","web link","link"],["quote","quote","quotes"],["recipe","recipe","cooking-pot"]];
+const wPins=w=>{const p=gp(w+"/pins");return Array.isArray(p)?p:[]};
+const wpUI={};let wpW="";
+const domOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return u}};
+const wLines=s=>String(s||"").split(/\n+/).map(x=>x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,"").trim()).filter(Boolean);
+function wpForm(id,t,v){
+  v=v||{};
+  const f=(k,lbl,ph,rows)=>`<label class="f">${lbl}</label>${rows?`<textarea data-wf="${k}" rows="${rows}" placeholder="${ph}">${esc(v[k]||"")}</textarea>`:`<input data-wf="${k}" type="${k==="u"?"url":"text"}" value="${esc(v[k]||"")}" placeholder="${ph}">`}`;
+  const F={img:[f("u","Image link","https://…"),f("c","Caption","optional")],
+   note:[f("h","Title","optional"),f("b","Note","write anything. the card grows to fit all of it.",6)],
+   link:[f("u","Web link","https://…"),f("h","Title","what is it? (optional)"),f("b","Note","why you saved it (optional)",2)],
+   quote:[f("b","Quote","the words…",4),f("c","Said by","optional")],
+   recipe:[f("h","Recipe name","name of the dish"),f("i","Ingredients","one per line",6),f("b","Method","one step per line",7)]}[t];
+  return `<div class="wpform" data-wpin="${id}">${F.join("")}<div class="chips" style="margin-top:12px"><button class="btn solid sm" data-act="wpSave" data-id="${id}" data-t="${t}">Pin it</button><button class="btn sm ghost" data-act="wpCancel" data-id="${id}">Cancel</button></div></div>`;
+}
+function wpView(p){
+  const t=p.t,src=/^https?:\/\//i.test(p.u||"")?p.u:"";
+  if(t==="img")return src?`<button class="wpimg" data-act="wpZoom" data-u="${esc(src)}" data-c="${esc(p.c||"")}" aria-label="Open image"><img src="${esc(src)}" alt="" referrerpolicy="no-referrer" loading="lazy" onload="window.muRefresh&&muRefresh()" onerror="this.parentNode.classList.add('bad');window.muRefresh&&muRefresh()"></button>${p.c?`<span class="wpcap">${esc(p.c)}</span>`:""}`:`<p class="small muted">no image link</p>`;
+  if(t==="link"){const d=domOf(src);return `${src?`<a class="wplink" href="${esc(src)}" target="_blank" rel="noopener"><img class="fav" src="https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(d)}" alt=""><span><b>${esc(p.h||d)}</b><small>${esc(d)}</small></span><i class="ph ph-export"></i></a>`:""}${p.b?`<div class="wptxt" style="margin-top:10px">${esc(p.b)}</div>`:""}`}
+  if(t==="quote")return `<blockquote class="wpq">${esc(p.b||"")}${p.c?`<cite>${esc(p.c)}</cite>`:""}</blockquote>`;
+  if(t==="recipe"){const I=wLines(p.i),M=wLines(p.b);return `${p.h?`<div class="wph">${esc(p.h)}</div>`:""}<div class="wprec">${I.length?`<h5>Ingredients</h5><ul>${I.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${M.length?`<h5>Method</h5><ol>${M.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}</div><p class="small muted" style="margin-top:6px">tap an ingredient to tick it off</p>`}
+  return `${p.h?`<div class="wph">${esc(p.h)}</div>`:""}<div class="wptxt">${esc(p.b||"")}</div>`;
+}
+function wpCards(w){
+  const L=wPins(w),out=L.map(p=>{
+    const ui=wpUI[p.id]||{},T=WPT.find(x=>x[0]===p.t)||WPT[1];
+    return card("wpin_"+p.id,T[1],T[2],ui.mode==="edit"?wpForm(p.id,p.t,p):wpView(p),{cls:"s4 wpin k-"+p.t,r:ui.mode==="edit"?"":`<button class="tx" data-act="wpEdit" data-id="${p.id}">edit</button> <button class="tx" data-act="wpDel" data-id="${p.id}">remove</button>`});
+  });
+  if(L.length<3){
+    const ui=wpUI.new||{};
+    const body=ui.mode==="form"?wpForm("new",ui.t,null):`<p class="small muted" style="margin-bottom:10px">${L.length?"room for "+(3-L.length)+" more. pick what to pin:":"pin something from this week to come back to: a picture, a recipe, a link, a quote, a note."}</p><div class="wptypes">${WPT.map(([k,l,i])=>`<button class="btn sm" data-act="wpType" data-t="${k}"><i class="ph ph-${i}"></i>${l}</button>`).join("")}</div>`;
+    out.push(card("wpin_new","Week pins","push-pin",body,{cls:"s4 wpin",r:`${L.length}/3`}));
+  }
+  return out;
+}
+const calb=t=>`<div class="cempty"><img src="calbert.png" alt=""><p>${t}</p></div>`;
+document.addEventListener("click",e=>{
+  const li=e.target.closest(".wprec li");if(li){li.classList.toggle("got");return}
+  const b=e.target.closest('[data-act^="wp"]');if(!b)return;
+  const a=b.dataset.act,D=b.dataset;
+  if(a==="wpZoom")return repZoom(D.u,D.c);
+  if(a==="wpType")wpUI.new={mode:"form",t:D.t};
+  else if(a==="wpCancel")delete wpUI[D.id];
+  else if(a==="wpEdit")wpUI[D.id]={mode:"edit"};
+  else if(a==="wpDel"){if(!confirm("Remove this pin?"))return;sp(wpW+"/pins",wPins(wpW).filter(p=>p.id!==D.id));save()}
+  else if(a==="wpSave"){
+    const root=b.closest(".wpform"),v={};root.querySelectorAll("[data-wf]").forEach(x=>v[x.dataset.wf]=x.value.trim());
+    const t=D.t,bad=(t==="img"||t==="link")&&!/^https?:\/\//i.test(v.u||"")?"paste a link starting with https://":(t==="note"||t==="quote")&&!v.b?"write something first":t==="recipe"&&!v.h&&!v.i?"add a name or ingredients":"";
+    if(bad)return toast(bad);
+    const L=wPins(wpW),pin=Object.assign({id:D.id==="new"?uid():D.id,t},v);
+    if(D.id==="new"){if(L.length>=3)return toast("three pins per week is the limit");sp(wpW+"/pins",L.concat(pin))}
+    else sp(wpW+"/pins",L.map(p=>p.id===D.id?pin:p));
+    save();delete wpUI[D.id];delete wpUI.new;
+  }else return;
+  render();
+});
 
 /* ===== shell and events ===== */
 /* ============================================================
@@ -1266,7 +1431,7 @@ function chrome(){
   $("side").innerHTML=`<nav class="rail" aria-label="sections">
    <div class="rhd">
      <a class="rav" href="#settings" title="Profile and settings" aria-label="Profile and settings">${avatarHtml()}</a>
-     <div class="who lb"><a class="wordmark" href="#today">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div>
+     <div class="who lb"><a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><small>${esc(mo.ph)} · ${esc(mo.lbl)}</small></div>
    </div>
    <a class="rr rpg" href="#today" title="Today"><span class="ic"><span class="ring" style="--p:${dp}"><b>${dp}</b></span></span><span class="lb t">today<small>${star(ss.stars)}${ss.run>1?` · run ${ss.run}`:""}</small></span></a>
    <div class="rlab"><span class="lb">the road</span></div>
@@ -1277,14 +1442,16 @@ function chrome(){
      <div class="rr ro"><span class="ic"><span class="syncdot"></span></span><span class="lb syncstat"></span></div>
      <a href="#settings" class="rr ${r.name==="settings"?"on":""}" title="Settings"><span class="ic">${ico("gear-six",r.name==="settings")}</span><span class="lb">Settings</span></a>
    </div></nav>`;
-  $("topbar").innerHTML=`<a class="wordmark" href="#today">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="focus" aria-label="Focus mode"><i class="ph ph-crosshair"></i></button><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
+  $("topbar").innerHTML=`<a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="focus" aria-label="Focus mode"><i class="ph ph-crosshair"></i></button><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
   $("tabs").innerHTML=NAVS.filter(n=>TABS.includes(n[0])).map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
 }
+let lastH=null;
 function render(){
   const y=window.scrollY,r=R();
   muDestroy();chrome();applyLook();
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
-  $("main").innerHTML=fn(r.arg);
+  $("main").classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
+  $("main").innerHTML=fn(r.arg);repGrow();
   muInit();
   setSyncState(syncing?"busy":syncMsg?"err":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
@@ -1339,12 +1506,14 @@ document.addEventListener("input",e=>{
   if(t.id==="aq"){aq=t.value;const l=$("archList");if(l)l.innerHTML=archDays();return}
   const k=t.dataset&&t.dataset.k;if(!k)return;
   if(t.type==="radio"&&!t.checked)return;
-  sp(k,t.type==="checkbox"?t.checked:t.value);save();if(/\/rit\//.test(k)&&t.checked)setTimeout(()=>celebrate(curDay(),false),120);
+  sp(k,t.type==="checkbox"?t.checked:t.value);save();if(/\/(bed|wake)$/.test(k))autoSleep(k.split("/")[1]);lineRefresh();if(/\/rit\//.test(k)&&t.checked)setTimeout(()=>celebrate(curDay(),false),120);
   if(/\/(steps|sleep|k)$/.test(k))liveUpdate();
   if((t.type==="checkbox"||t.type==="radio")&&t.dataset.re)render();
 });
 document.addEventListener("change",e=>{
   const t=e.target;
+  if(t.dataset&&t.dataset.rtfont!==undefined){if(t.value)rtRun(rtEd(t),()=>rtX("fontName",t.value,1));t.value="";return}
+  if(t.dataset&&t.dataset.rtcustom){rtRun(rtEd(t),()=>rtX(t.dataset.rtcustom==="fore"?"foreColor":"hiliteColor",t.value,1));return}
   if(t.id==="amo"){amo=t.value;render();return}
   if(t.id==="avf"&&t.files[0]){setAvatar(t.files[0]);t.value="";return}
   if(t.id==="imp"&&t.files[0]){
@@ -1370,7 +1539,9 @@ document.addEventListener("click",async e=>{
    case"muse":st.notes.muse=Math.floor(Math.random()*MUSES.length);st.su.notes=Date.now();save();render();break;
    case"sym":sp(`days/${dk}/sym/${D.s}`,!gp(`days/${dk}/sym/${D.s}`));save();render();break;
    case"flow":sp(`days/${dk}/flow`,gp(`days/${dk}/flow`)===D.f?"":D.f);save();render();break;
-   case"periodStart":if(!st.periods.some(p=>p.s===D.d)){addItem("periods",{s:D.d});if(st.settings.trackCycle===false)sp("settings/trackCycle",true);save();render();toast("period start logged")}break;
+   case"weed":sp(`days/${dk}/weed`,gp(`days/${dk}/weed`)===D.v?"":D.v);save();render();break;
+   case"tnow":{const n=new Date(),t=p2(n.getHours())+":"+p2(n.getMinutes());let td=dk;if(D.f==="bed"&&n.getHours()>=17&&dk===todayKey()){td=addDays(dk,1);toast("bedtime saved to tomorrow’s sleep log")}sp(`days/${td}/${D.f}`,t);autoSleep(td);save();render();break}
+   case"periodStart":if(!st.periods.some(p=>p.s===D.d)){addItem("periods",{s:D.d});if(D.d===todayKey())calEvt("period");if(st.settings.trackCycle===false)sp("settings/trackCycle",true);save();render();toast("period start logged")}break;
    case"periodEnd":{const open=sortedP().filter(p=>p.s<=D.d&&!p.e).pop();if(open){open.e=D.d;open._u=Date.now();save();render();toast("period end logged")}break}
    case"periodUndo":{const idx=st.periods.findIndex(p=>p.s===D.d);if(idx>=0){delItem("periods",idx);save();render()}break}
    case"periodAdd":{const v=$("pstart")&&$("pstart").value;if(!v)return toast("pick a date");if(!st.periods.some(p=>p.s===v))addItem("periods",{s:v});save();render();toast("added");break}
