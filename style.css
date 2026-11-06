@@ -686,7 +686,7 @@ html.focus .line{display:none}
 .rstep>.no{font:italic 300 1.7rem/1 var(--serif)}
 .mmood{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .rt-view{margin:8px 0;font-size:.95rem;line-height:1.6;overflow-wrap:anywhere}
-.rt-view b{display:block;font:800 .58rem var(--sans);letter-spacing:.2em;text-transform:uppercase}
+.rt-view b.rtl{display:block;font:800 .58rem var(--sans);letter-spacing:.2em;text-transform:uppercase}
 .vempty{padding:46px 20px;text-align:center;border:1.5px dashed var(--t30);border-radius:4px;font:italic 500 1.3rem/1.3 var(--serif);color:var(--accT)}
 @media(max-width:560px){.mood{column-width:140px}}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -980,3 +980,128 @@ i.ph,i.ph-fill{display:inline-block;width:1em;height:1em;flex:none;font-style:no
 .hbars i{height:9px;border-radius:99px;background:linear-gradient(90deg,var(--hc,var(--acc)) var(--w),color-mix(in srgb,var(--t55) 14%,transparent) var(--w))}
 .hbars b{color:inherit;font-weight:600;min-width:2ch;text-align:right}
 .hbars em{font-style:normal;font-size:.68rem;opacity:.7;min-width:3ch}
+
+/* ================= v14: Calbert, editor, body, week pins, report cards ================= */
+
+/* ---- Calbert ---- */
+.calmoth,.wm,.cempty img,.vempty img{image-rendering:pixelated}
+.line .calmoth{width:54px;height:auto;flex:none;margin:-6px 2px -6px -4px;animation:flit 5s ease-in-out infinite;transform-origin:50% 60%}
+.line .calmoth.flap{animation:flap .7s ease,flit 5s ease-in-out .7s infinite}
+.line .cl{transition:opacity .3s}
+@keyframes flit{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-4px) rotate(3deg)}}
+@keyframes flap{0%{transform:scale(1)}25%{transform:scale(1.25,.8) rotate(-8deg)}60%{transform:scale(.85,1.15) rotate(8deg)}100%{transform:scale(1)}}
+.wordmark{display:inline-flex;align-items:center;gap:8px}
+.wordmark .wm{height:1.25em;width:auto;flex:none}
+.rail .wordmark .wm{height:1.9rem}
+.cempty{display:flex;align-items:center;gap:14px;padding:6px 2px}
+.cempty img{width:64px;height:auto;flex:none;opacity:.9;animation:flit 6s ease-in-out infinite}
+.cempty p{font:italic 500 1.05rem/1.4 var(--serif);color:var(--t75)}
+.vempty{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.vempty img{width:96px;height:auto;animation:flit 6s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.calmoth,.cempty img,.vempty img,.line .calmoth.flap{animation:none!important}}
+
+/* ---- rich text editor v2 ---- */
+.rtebar{flex-wrap:wrap;align-items:center;gap:2px}
+.rtebar .sep{width:1px;height:20px;background:var(--t15);margin:0 4px}
+.rb{width:auto;min-width:34px;padding:0 7px;font:700 .8rem var(--sans)}
+.rb.rbcode{font-family:var(--mono)}
+.rtfont{width:auto;max-width:132px;min-height:34px;padding:2px 6px;font-size:.78rem;border-radius:7px}
+.rtc{position:relative;display:inline-flex}
+.rtA{font:800 1rem/1 var(--sans);border-bottom:3px solid var(--accT);padding-bottom:1px}
+.rtA.hl{background:var(--a3);border:0;border-radius:3px;padding:2px 4px;font-size:.82rem}
+.rtpop{position:absolute;top:calc(100% + 4px);left:0;z-index:30;display:grid;grid-template-columns:repeat(6,28px);gap:7px;padding:12px;background:var(--surf);border:1px solid var(--t30);border-radius:var(--r2);box-shadow:var(--shadow)}
+.rtpop[hidden]{display:none}
+.rtpop button[data-rtcol]{width:28px;height:28px;border-radius:50%;border:2px solid var(--t30);padding:0}
+.rtpop button[data-rtcol]:hover{border-color:var(--text);transform:scale(1.12)}
+.rtpop .rtnone{grid-column:span 4;border-radius:99px;width:auto;height:28px;font-size:.72rem;font-weight:700;color:var(--t75);background:transparent}
+.rtcust{width:28px;height:28px;border-radius:50%;border:2px dashed var(--t55);display:grid;place-items:center;font-weight:800;position:relative;overflow:hidden;cursor:pointer;color:var(--t75)}
+.rtcust input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.rtecode{display:block;width:100%;min-height:150px;border:0;border-radius:0;background:var(--surf);padding:14px 16px;font:400 .82rem/1.6 var(--mono);resize:vertical;color:var(--text);tab-size:2;white-space:pre-wrap}
+.rtewrap.code .rb:not(.rbcode),.rtewrap.code .rtfont{opacity:.3;pointer-events:none}
+.rtewrap.code .rbcode{background:var(--acc);color:var(--onacc)}
+.rte,.rt-view{--sq:var(--accT)}
+.rte u,.rt-view u,.rt-view ins{text-decoration:underline wavy var(--accT);text-decoration-thickness:2px;text-underline-offset:.34em;text-decoration-skip-ink:none}
+.rte a,.rt-view a{color:var(--accT);text-decoration:none;font-weight:600;padding:0 4px;margin:0 1px;border-radius:5px;background:var(--a1);border-bottom:2px solid var(--a3);transition:var(--ease)}
+.rte a::after,.rt-view a::after{content:"↗";font-size:.7em;margin-left:3px;opacity:.7}
+.rte a:hover,.rt-view a:hover{background:var(--a2);border-bottom-color:var(--accT)}
+.rte h1,.rt-view h1{font:italic 600 2rem/1.15 var(--serif);margin:.5em 0 .2em;white-space:normal}
+.rte h2,.rt-view h2{font:italic 600 1.55rem/1.2 var(--serif);margin:.5em 0 .2em;white-space:normal}
+.rte h3,.rt-view h3{font:800 .78rem/1.3 var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--accT);margin:.8em 0 .2em;white-space:normal}
+.rte ul,.rt-view ul{list-style:disc;padding-left:1.5em;margin:.4em 0;white-space:normal}
+.rte ol,.rt-view ol{list-style:decimal;padding-left:1.6em;margin:.4em 0;white-space:normal}
+.rte li::marker,.rt-view li::marker{color:var(--accT)}
+.rte blockquote,.rt-view blockquote{margin:.6em 0;padding:4px 0 4px 16px;border-left:3px solid var(--acc);font:italic 500 1.12rem/1.5 var(--serif);color:var(--t90);white-space:normal}
+.rte hr,.rt-view hr{border:0;height:10px;margin:.9em 0;background:radial-gradient(circle,var(--accT) 2px,transparent 2.5px) center/18px 10px repeat-x;opacity:.7}
+.rte table,.rt-view table{border-collapse:collapse;max-width:100%}.rte td,.rte th,.rt-view td,.rt-view th{border:1px solid var(--t30);padding:4px 8px}
+.rte p,.rt-view p{margin:.35em 0}
+
+/* ---- body card ---- */
+.sleept{margin-top:2px}
+.sleept input[type=time]{min-width:0;flex:1}
+.wseg{margin-top:2px}
+.wseg button{min-width:64px}
+.feelg{margin-top:8px}
+.feelg small{display:block;margin-bottom:5px;font:800 .56rem var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--t55)}
+.symmore{margin-top:8px}
+button.chip:active{transform:scale(.94)}
+
+/* ---- week pins ---- */
+.wpin .cb{line-height:1.5}
+.wptypes{display:flex;flex-wrap:wrap;gap:6px}
+.wpform input,.wpform textarea{width:100%}
+.wpform textarea{resize:vertical;min-height:0;line-height:1.5}
+.wpimg{position:relative;display:block;width:100%;padding:0;border:0;background:var(--surf2);cursor:zoom-in;border-radius:var(--r2);overflow:hidden;line-height:0}
+.wpimg img{display:block;width:100%;height:auto;transition:transform .5s}
+.wpimg:hover img{transform:scale(1.03)}
+.wpimg.bad img{display:none}
+.wpimg.bad::after{content:"couldn’t load that image link. edit the pin and try the direct image URL.";display:block;padding:22px;font:400 .8rem/1.4 var(--sans);color:var(--t55)}
+.wpcap{display:block;padding-top:8px;font:italic 500 1.02rem/1.3 var(--serif);color:var(--t75)}
+.wph{font:italic 600 1.4rem/1.2 var(--serif);margin-bottom:8px;overflow-wrap:anywhere}
+.wptxt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.95rem;line-height:1.65}
+.wplink{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--t15);border-radius:var(--r2);background:var(--a1);color:var(--text);text-decoration:none;transition:var(--ease)}
+.wplink:hover{border-color:var(--accT);background:var(--a2)}
+.wplink .fav{width:34px;height:34px;border-radius:9px;flex:none;background:var(--surf2)}
+.wplink span{min-width:0;display:flex;flex-direction:column}
+.wplink b{overflow-wrap:anywhere;line-height:1.3}
+.wplink small{color:var(--t55);font:400 .7rem var(--mono);overflow-wrap:anywhere}
+.wplink>i{margin-left:auto;color:var(--accT);font-size:1.1rem}
+.wpq{margin:0;padding:2px 0 2px 16px;border-left:3px solid var(--acc);font:italic 500 1.5rem/1.35 var(--serif);white-space:pre-wrap;overflow-wrap:anywhere}
+.wpq cite{display:block;margin-top:10px;font:700 .68rem var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--t55);font-style:normal}
+.wpq cite::before{content:"— "}
+.wprec h5{font:800 .6rem var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--accT);margin:10px 0 4px}
+.wprec ul,.wprec ol{padding-left:1.3em;margin:0;font-size:.92rem;line-height:1.55}
+.wprec ul{list-style:none;padding:0}
+.wprec ul li{cursor:pointer;padding:3px 0 3px 26px;position:relative;overflow-wrap:anywhere}
+.wprec ul li::before{content:"";position:absolute;left:2px;top:.5em;width:14px;height:14px;border:2px solid var(--t55);border-radius:4px}
+.wprec li.got{color:var(--t55);text-decoration:line-through}
+.wprec li.got::before{background:var(--acc);border-color:var(--acc);box-shadow:inset 0 0 0 2px var(--surf)}
+.wprec ol li{margin-bottom:6px;overflow-wrap:anywhere}
+
+/* ---- R.E.P.O.R.T. cards: heights follow the content, nothing is cut off ---- */
+.rep3{align-items:start;grid-auto-flow:dense}
+.rc{align-self:start;width:100%}
+@container rep (min-width:541px){.rc.wide{grid-column:span 2}}
+.rcard{overflow-wrap:anywhere;transition:box-shadow .25s,border-color .25s}
+.rcard:hover,.rcard:focus-within{border-color:var(--a3);box-shadow:0 6px 22px color-mix(in srgb,var(--acc) 14%,transparent)}
+.rcard textarea{field-sizing:content;overflow:hidden;min-height:2.6em;width:100%}
+.rcap{min-height:2.8em!important}
+.rquote{min-height:0;aspect-ratio:auto;padding:4px 4px 4px 14px}
+.rquote textarea{font:500 1.15rem/1.45 var(--serif);font-style:italic}
+.rempty{min-height:0}
+@container rcell (min-width:420px){.rquote{min-height:0}.rempty{min-height:0}}
+
+/* ---- echoes ---- */
+.snip{white-space:pre-line;overflow-wrap:anywhere;line-height:1.55}
+.snip mark{background:var(--a3);color:inherit;border-radius:4px;padding:0 3px;font-weight:700}
+
+/* ---- life in the cards: entrance, hover, vision, archive ---- */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.enter .mi>.card,.enter>.card,.enter .cols .card{animation:rise .5s both}
+.enter .mi:nth-child(2)>.card{animation-delay:.05s}.enter .mi:nth-child(3)>.card{animation-delay:.1s}.enter .mi:nth-child(4)>.card{animation-delay:.15s}.enter .mi:nth-child(5)>.card{animation-delay:.2s}.enter .mi:nth-child(n+6)>.card{animation-delay:.25s}
+.mi>.card:hover{border-color:var(--a3)}
+.mtile img{transition:transform .5s;cursor:zoom-in}
+.mtile:hover img{transform:scale(1.04)}
+.mtile{overflow:hidden}
+a.arow{transition:transform .2s,border-color .2s}
+a.arow:hover{transform:translateX(5px)}
+@media(prefers-reduced-motion:reduce){.enter .mi>.card,.enter>.card,.enter .cols .card{animation:none}}
