@@ -468,12 +468,12 @@ html{scroll-padding-top:72px}
 .ghost{position:relative;isolation:isolate}
 .ghost::after{content:attr(data-ghost);position:absolute;z-index:-1;left:-.08em;top:-.55em;font:100 7.5rem/1 var(--script);color:var(--acc);opacity:.13;text-transform:lowercase;white-space:nowrap;pointer-events:none}
 .pgh h1.ghost::after{font-size:6rem}
-.av{position:relative;width:42px;height:50px;border-radius:0 0 50% 50%/0 0 60% 60%;outline:1px solid var(--a3);outline-offset:5px;overflow:hidden;margin:3px 3px 3px 5px}
+.av{position:relative;width:40px;height:40px;border-radius:100%;outline:1px solid var(--a3);outline-offset:5px;overflow:hidden;margin:3px 3px 3px 5px}
 .av::before{content:"";position:absolute;inset:0;z-index:0;filter:blur(9px);background:conic-gradient(from 41deg,var(--a3) 0 180deg,var(--a1) 180deg 360deg)}
 .av img{position:relative;z-index:1;object-fit:cover;object-position:top;filter:contrast(.88) brightness(1.05) grayscale(.35)}
 .av>i{position:relative;z-index:1}
 .av.lg{width:96px;height:116px;outline-offset:8px}
-#topbar .av{width:30px;height:36px;margin:0 4px 0 0;outline-offset:3px}
+#topbar .av{width:30px;height:30px;margin:0 4px 0 0;outline-offset:3px}
 .rprog .ring{width:36px;height:36px}.rprog .ring b{width:28px;height:28px}
 .rq button.on{background:var(--a2);color:var(--text)}
 .rq button.on i{color:var(--accT)}
@@ -1020,7 +1020,7 @@ i.ph,i.ph-fill{display:inline-block;width:1em;height:1em;flex:none;font-style:no
 .rtewrap.code .rb:not(.rbcode),.rtewrap.code .rtfont{opacity:.3;pointer-events:none}
 .rtewrap.code .rbcode{background:var(--acc);color:var(--onacc)}
 .rte,.rt-view{--sq:var(--accT)}
-.rte u,.rt-view u,.rt-view ins{text-decoration:underline wavy var(--accT);text-decoration-thickness:2px;text-underline-offset:.34em;text-decoration-skip-ink:none}
+.rte u,.rt-view u,.rt-view ins{text-decoration:underline wavy var(--acc);text-decoration-thickness:2px;text-underline-offset:.34em;text-decoration-skip-ink:none}
 .rte a,.rt-view a{color:var(--accT);text-decoration:none;font-weight:600;padding:0 4px;margin:0 1px;border-radius:5px;background:var(--a1);border-bottom:2px solid var(--a3);transition:var(--ease)}
 .rte a::after,.rt-view a::after{content:"↗";font-size:.7em;margin-left:3px;opacity:.7}
 .rte a:hover,.rt-view a:hover{background:var(--a2);border-bottom-color:var(--accT)}
