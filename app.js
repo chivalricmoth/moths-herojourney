@@ -38,7 +38,7 @@ let saveT=null,dirty=false,syncT=null,syncing=false;
 function setSaved(t){const e=document.getElementById("saved");if(e)e.textContent=mem&&!/saved \d/.test(t)?"not saved on this device":t}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(st));localStorage.setItem(LKEY,JSON.stringify(LS));setSaved("saved "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}))}catch(e){setSaved("not saved (storage blocked)")}}
 function persistLocal(){try{localStorage.setItem(LKEY,JSON.stringify(LS))}catch(e){}}
-function save(){dirty=true;clearTimeout(saveT);saveT=setTimeout(persist,250);setSaved("saving…");scheduleSync()}
+function save(){dirty=true;clearTimeout(saveT);saveT=setTimeout(persist,250);setSaved("saving…");if(LS.syncUrl&&!syncing)setSyncState("pending");scheduleSync()}
 function scheduleSync(){clearTimeout(syncT);if(LS.syncUrl&&LS.auto)syncT=setTimeout(()=>syncNow(false),15000)}
 
 /* ---------- dates ---------- */
@@ -100,9 +100,9 @@ function mergeState(a,b){
 let syncMsg="";
 function setSyncState(s,msg){
   syncMsg=msg||"";
-  document.querySelectorAll(".syncdot").forEach(e=>{e.className="syncdot "+s});
+  document.documentElement.classList.toggle("syncing",s==="busy");document.querySelectorAll(".syncdot").forEach(e=>{e.classList.remove("ok","busy","err","pending");if(s)e.classList.add(s)});
   document.querySelectorAll(".syncstat").forEach(e=>{
-    e.textContent=s==="busy"?"syncing…":s==="err"?"sync problem":s==="ok"?"synced "+new Date(LS.lastSync).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):(LS.syncUrl?"not synced yet":"sync off");
+    e.textContent=s==="pending"?"unsynced changes":s==="busy"?"syncing…":s==="err"?"sync problem":s==="ok"?"synced "+new Date(LS.lastSync).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):(LS.syncUrl?"not synced yet":"sync off");
     e.title=msg||"";
   });
 }
@@ -667,7 +667,7 @@ function pToday(arg){
   const mantra=MANTRAS[dayN%MANTRAS.length];
   const rits=RIT.filter(r=>r.t<=ti),ss=starStats();
   const wg=+st.settings.waterGoal||8,sg=stepGoalFor(dk),calG=+st.settings.calGoal||0;
-  const ci=cycleInfo(dk),muse=MUSES[(st.notes.muse||0)%MUSES.length];
+  const ci=cycleInfo(dk),muse=MUSES[museIdx(dk)];
   const hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",nm=(st.settings.name||"").trim();
 
   /* guided steps */
@@ -689,7 +689,7 @@ function pToday(arg){
 
   const mealsCard=card("meals","Meals","fork-knife",`${MEALS.map(([id,l])=>{const t=gp(`days/${dk}/meals/${id}/t`)||"",e=estimateMeal(t);return `<div class="meal2"><div class="mh"><span><i class="ph ph-${{b:"coffee",l:"bowl-food",d:"cooking-pot",s:"cookie"}[id]||"fork-knife"}"></i>${l}</span><span class="est" id="est_${id}">${e.total?"≈ "+e.total+" kcal":""}</span></div><textarea data-meal="${id}" rows="2" placeholder="e.g. 2 eggs, toast with butter, large oat latte">${esc(t)}</textarea><div class="mf"><span id="unk_${id}" class="unk">${e.unknown.length?"couldn’t size: "+esc(e.unknown.join(", ")):""}</span><span style="margin-left:auto">override</span>${numIn(`days/${dk}/meals/${id}/k`,"kcal")}</div></div>`}).join("")}<p class="small muted" style="margin-top:8px">estimates are rough. awareness, not judgment.</p>`,{cls:"s4",r:`<span class="num" id="kcalTot">${S.kcal?S.kcal.toLocaleString()+" kcal":"–"}${calG?" / "+calG.toLocaleString():""}</span>`});
 
-  const bodyCard=card("body","Body","heartbeat",`<div class="water">${Array.from({length:Math.max(wg,S.water)},(_,i)=>`<button class="${i<S.water?"on":""}" data-act="water" data-n="${i+1}" aria-label="${i+1} glasses"></button>`).join("")}</div>${bar(S.water,wg)}<div class="small muted num" style="margin-top:4px">${S.water} / ${wg} glasses</div><div class="row" style="margin-top:12px"><div><label class="f" style="margin-top:0">Steps · goal ${sg.toLocaleString()}</label>${numIn(`days/${dk}/steps`,"0")}<div id="stepsBar">${bar(S.steps,sg)}</div></div><div><label class="f" style="margin-top:0">Sleep (hours)</label>${numIn(`days/${dk}/sleep`,"0",'step=".5"')}<div id="sleepBar">${bar(S.sleep,8)}</div></div></div>${sleepTimes(dk,d)}<label class="f">Mood <span class="muted">${MOODS[S.mood]||""}</span></label>${faceRow("mood",S.mood,FACE,MOODS)}<label class="f">Energy <span class="muted">${ENERGY[S.energy]||""}</span></label>${faceRow("energy",S.energy,BATT,ENERGY)}<label class="f">How else do you feel?</label>${feelHtml(dk)}${weedHtml(d)}${symBody(dk)}`,{cls:"s6"});
+  const bodyCard=card("body","Body","heartbeat",`<div class="water">${Array.from({length:Math.max(wg,S.water)},(_,i)=>`<button class="${i<S.water?"on":""}" data-act="water" data-n="${i+1}" aria-label="${i+1} glasses"></button>`).join("")}</div>${bar(S.water,wg)}<div class="small muted num" style="margin-top:4px">${S.water} / ${wg} glasses</div><div class="row" style="margin-top:12px"><div><label class="f" style="margin-top:0">Steps · goal ${sg.toLocaleString()}</label>${numIn(`days/${dk}/steps`,"0")}<div id="stepsBar">${bar(S.steps,sg)}</div></div><div><label class="f" style="margin-top:0">Sleep (hours)</label>${numIn(`days/${dk}/sleep`,"0",'step=".5"')}<div id="sleepBar">${bar(S.sleep,8)}</div></div></div>${sleepTimes(dk,d)}<label class="f">Mood <span class="muted">${MOODS[S.mood]||""}</span></label>${faceRow("mood",S.mood,FACE,MOODS)}<label class="f">Energy <span class="muted">${ENERGY[S.energy]||""}</span></label>${faceRow("energy",S.energy,BATT,ENERGY)}${feelBody(dk)}${weedHtml(d)}${symBody(dk)}`,{cls:"s6"});
 
   /* cycle */
   let cycleCard="";
@@ -708,16 +708,16 @@ function pToday(arg){
     }else cycleCard=card("cycle","Cycle","moon",`<p class="small muted">Log the first day of your last period and the app will estimate your phase and offer a daily tip that fits.</p><div class="inl" style="margin-top:10px"><input type="date" id="pstart" value="${dk}" max="${todayKey()}"><button class="btn solid sm" data-act="periodAdd">Save</button></div><p class="small muted" style="margin-top:8px">Or turn cycle tracking off in Settings.</p>`,{cls:"tint"});
   }
 
-  const museCard=card("muse","Muse of the day","star-four",`<div class="it" style="font-size:1.3rem;line-height:1.2">${esc(muse[0])}</div><div class="small muted" style="margin:2px 0 6px"><i>${esc(muse[1])}</i></div><p class="small">${esc(muse[2])}</p>`,{cls:"s4",r:`<button class="tx" data-act="muse">another</button>`});
+  const museCard=card("muse","Muse of the day","star-four",`<div class="it" style="font-size:1.3rem;line-height:1.2">${esc(muse[0])}</div><div class="small muted" style="margin:2px 0 6px"><i>${esc(muse[1])}</i></div><p class="small">${esc(muse[2])}</p>`,{cls:"s4",r:"new every day"});
   const nav=`<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,-1)}" aria-label="previous day">←</button>${isToday?"":`<button class="btn sm" data-act="go" data-h="#today">Today</button>`}<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,1)}" aria-label="next day">→</button>`;
   const phChip=ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name}</span>`:"";
   const lineQ=calLine(dk)||LINES[Math.floor(parse(dk)/864e5)%LINES.length];
   if(isToday&&Array.isArray(st.notes.pins)&&st.notes.pins.length&&!dayPins(dk).length){sp(`days/${dk}/pins`,[{id:uid(),items:st.notes.pins}]);sp("notes/pins",[]);save()}
-  const cards=[nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)],F=!!LS.focus;
-return head(isToday?(nm?`${greet}, ${esc(nm)}`:"Today"):short(dk),`${esc(pretty(dk))} · <span class="it" style="font-size:1rem">${esc(bk(m.ph))}</span> ${phChip}`,nav)+
- (F?`<div class="focusnote"><i class="ph ph-crosshair"></i>focus mode: next up and your journal. nothing else.<button class="btn sm" data-act="focus">Show everything</button></div>`
- :`<div class="line"><img class="calmoth" src="calbert.png" alt="Calbert" title="Calbert"><span class="cl">${calHtml(lineQ||m.line)}</span>${lineQ?`<span class="small muted lede-s">${calHtml(m.line)}</span>`:""}</div>`)+
- mu("today",F?cards.filter(h=>/data-id="(now|journal)"/.test(h)):cards);
+  const cards=[nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)];
+const tmEye=(isToday?"today":dk<todayKey()?"looking back":"looking ahead")+" · "+parse(dk).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}),
+ tmH=isToday?`${greet}${nm?`, <em>${esc(nm)}</em>`:""}`:esc(short(dk)),
+ tmChips=`${ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}"><i class="ph ph-moon"></i>${PHASES[ci.ph].name} · day ${ci.day}</span>`:""}<span class="chip"><i class="ph ph-star-four"></i>${ss.stars} star${ss.stars===1?"":"s"}${ss.run>1?" · run "+ss.run:""}</span><span class="chip"><i class="ph ph-flag"></i>${esc(m.ph)}</span>`;
+return `<div class="tmast"><div class="tm-l"><div class="tm-top"><span class="tm-eye">${esc(tmEye)}</span><div class="tm-nav">${nav}</div></div><h1 class="tm-h">${tmH}</h1><div class="chips tm-chips">${tmChips}</div></div><div class="line"><img class="calmoth" src="calbert.png" alt="Calbert" title="Calbert"><span class="cl">${calHtml(lineQ||m.line)}</span></div></div>`+mu("today",cards);
 }
 function monthDone(mk){let n=0;Object.keys(st.days).forEach(k=>{if(k.startsWith(mk)&&dayStats(k).done)n++});return n}
 
@@ -1036,11 +1036,11 @@ function pVision(){
 function archSummary(){const ssA=starStats();
   const ks=loggedDays(),end=todayKey();
   const cells=[];
-  for(let k=monday(addDays(end,-364));k<=end;k=addDays(k,1)){const s=st.days[k]?dayStats(k):null;cells.push(`<i class="${s&&s.has?(s.done?((s.d.journal||s.win||s.d.j_anchor)?"l3":"l2"):"l1"):""}" title="${esc(short(k))}"></i>`)}
+  for(let k=monday(addDays(end,-364));k<=end;k=addDays(k,1))cells.push(heatCell(k));
   let run=0,best=0,showed=0,cur=0;
   if(ks.length)for(let k=ks[0];k<=end;k=addDays(k,1)){if(dayStats(k).done){run++;showed++;if(run>best)best=run}else run=0}
   let k=end;if(!dayStats(k).done)k=addDays(k,-1);while(dayStats(k).done){cur++;k=addDays(k,-1)}
-  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>The past year<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Stars",ssA.stars,"they only ever go up")}${kpi("Best Run",ssA.best+"<small> d</small>","consecutive starred days")}${ssA.run>0?kpi("Run now",ssA.run+"<small> d</small>","one missed day is forgiven"):""}</div><div class="heat">${cells.join("")}</div><div class="legend"><span style="--lc:var(--t15)">nothing</span><span style="--lc:var(--a2)">logged</span><span style="--lc:var(--a3)">showed up</span><span style="--lc:var(--acc)">showed up + wrote</span></div></div>`;
+  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>The past year<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Stars",ssA.stars,"they only ever go up")}${kpi("Best Run",ssA.best+"<small> d</small>","consecutive starred days")}${ssA.run>0?kpi("Run now",ssA.run+"<small> d</small>","one missed day is forgiven"):""}</div><div class="heat">${cells.join("")}</div>${heatLegend()}</div>`;
 }
 
 /* ============================================================ ARCHIVE */
@@ -1049,41 +1049,6 @@ const insAvg=L=>{const e=nums(L.map(s=>s.energy).filter(x=>x>0)),m=nums(L.map(s=
 const hbars=(rows,mx=5)=>`<div class="hbars">${rows.map(([l,v,sub,c])=>`<div><span>${l}</span><i style="--w:${v==null?0:Math.max(3,v/mx*100)}%;${c?`--hc:${c}`:""}"></i><b class="num">${v==null?"–":r1(v)}</b>${sub?`<em>${sub}</em>`:""}</div>`).join("")}</div>`;
 const icard=(t,body,note)=>`<div class="card"><h3>${t}</h3>${note?`<p class="small" style="margin-bottom:10px">${note}</p>`:""}${body}</div>`;
 const NEED="<p class='small muted'>Log a few more days and this will fill in.</p>";
-function archInsights(){
-  const ks=loggedDays(),S={};ks.forEach(k=>S[k]=dayStats(k));
-  const bucket=[["under 6h",s=>s.sleep>0&&s.sleep<6],["6 to 7h",s=>s.sleep>=6&&s.sleep<7],["7h or more",s=>s.sleep>=7]];
-  const sl=bucket.map(([l,f])=>({l,...insAvg(ks.map(k=>S[k]).filter(f))}));
-  const ok=sl.filter(x=>x.e!=null),hi=ok[ok.length-1],lo=ok[0];
-  const sleepNote=ok.length>1&&hi.e!==lo.e?`After ${hi.l} your energy averages <b>${r1(hi.e)}</b> vs <b>${r1(lo.e)}</b> after ${lo.l}.`:"";
-  const prev=(f,g)=>{const y=[],n=[];ks.forEach(k=>{const p=S[addDays(k,-1)];if(p&&p.has&&(S[k].energy||S[k].mood))(f(p,addDays(k,-1))>=g(addDays(k,-1))?y:n).push(S[k])});return[insAvg(y),insAvg(n)]};
-  const [sy,sn]=prev(p=>p.steps,k=>stepGoalFor(k)),[wy,wn]=prev(p=>p.water,()=>+st.settings.waterGoal||8);
-  const pr=(a,b,l)=>a.e!=null&&b.e!=null?[[`${l} hit`,a.e,`${a.n}d`],[`${l} missed`,b.e,`${b.n}d`]]:[];
-  const dayRows=[...pr(sy,sn,"steps"),...pr(wy,wn,"water")];
-  const phs=Object.keys(PHASES).map(p=>({p,...phaseAvg(p)}));
-  const phRows=phs.filter(x=>x.e!=null).flatMap(x=>[[`${PHASES[x.p].name} · energy`,x.e,`${x.n}d`,PHASES[x.p].hue],[`${PHASES[x.p].name} · mood`,x.m,"",PHASES[x.p].hue]]);
-  const tiered=ks.filter(k=>S[k].d.tier),tc={};tiered.forEach(k=>(tc[S[k].d.tier]=tc[S[k].d.tier]||[]).push(k));
-  const moth=tc.candle||[],ms=moth.filter(starred).length;
-  const famRows=TIERS.map(t=>[t[1],(tc[t[0]]||[]).length,tiered.length?Math.round((tc[t[0]]||[]).length/tiered.length*100)+"%":""]);
-  const famPh=Object.keys(PHASES).map(p=>{const L=tiered.filter(k=>{const c=cycleInfo(k);return c&&c.ph===p});const top=TIERS.map(t=>[t[1],L.filter(k=>S[k].d.tier===t[0]).length]).sort((a,b)=>b[1]-a[1])[0];return L.length>=3&&top[1]?`<span class="chip phase" style="--ph:${PHASES[p].hue}">${PHASES[p].name}: mostly ${top[0]}</span>`:""}).join("");
-  const fel=k=>Object.keys(S[k].d.feel||{}).filter(f=>S[k].d.feel[f]);
-  const byMo={};ks.forEach(k=>fel(k).forEach(f=>{const m=byMo[k.slice(0,7)]=byMo[k.slice(0,7)]||{};m[f]=(m[f]||0)+1}));
-  const moRows=Object.keys(byMo).sort().reverse().slice(0,6).map(m=>`<div style="margin-bottom:8px"><div class="small muted"><b>${m}</b></div><div class="chips">${Object.entries(byMo[m]).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f,c])=>`<span class="chip on">${f} <span class="num">${c}</span></span>`).join("")}</div></div>`).join("");
-  const lowD=ks.filter(k=>S[k].energy>0&&S[k].energy<=2),base=lowD.length/Math.max(1,ks.filter(k=>S[k].energy>0).length);
-  const fl={};ks.forEach(k=>fel(k).forEach(f=>{const o=fl[f]=fl[f]||{n:0,low:0};o.n++;if(S[k].energy>0&&S[k].energy<=2)o.low++}));
-  const clus=Object.entries(fl).filter(([,o])=>o.n>=3&&o.low/o.n>base).sort((a,b)=>b[1].low/b[1].n-a[1].low/a[1].n).slice(0,4);
-  const fp={};ks.forEach(k=>{const c=cycleInfo(k);if(c)fel(k).forEach(f=>{const o=fp[c.ph]=fp[c.ph]||{};o[f]=(o[f]||0)+1})});
-  const fpHtml=Object.keys(fp).map(p=>{const t=Object.entries(fp[p]).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join(", ");return`<span class="chip phase" style="--ph:${PHASES[p].hue}">${PHASES[p].name}: ${t}</span>`}).join("");
-  return`<div class="cols c2"><div class="col">
-   ${icard("Sleep → energy and mood",sl.some(x=>x.e!=null)?hbars(sl.flatMap(x=>[[x.l+" · energy",x.e,x.n+"d"],[x.l+" · mood",x.m,""]])):NEED,sleepNote||"Log sleep, energy and mood for a couple of weeks.")}
-   ${icard("Yesterday’s steps and water → today",dayRows.length?hbars(dayRows):NEED,"Average energy the next day, depending on whether you hit the goal.")}
-   ${weedCard(ks,S)}
-   ${icard("Energy and mood by phase",phRows.length?hbars(phRows):NEED)}
-  </div><div class="col">
-   ${icard("Your familiars",tiered.length?hbars(famRows.map(r=>[r[0],r[1],r[2]]),Math.max(1,...famRows.map(r=>r[1])))+`<div class="chips" style="margin-top:8px">${famPh}</div>`+(moth.length?`<p class="small" style="margin-top:10px"><b>${ms}</b> of your <b>${moth.length}</b> Moth days still earned a star (${Math.round(ms/moth.length*100)}%).${ms?" A Moth day counts in full.":""}</p>`:""):NEED)}
-   ${icard("Feelings, month by month",moRows||NEED,"Your five most-logged feelings each month.")}
-   ${icard("What clusters",clus.length||fpHtml?(clus.length?`<p class="small">Feelings that turn up on low-energy days: ${clus.map(([f,o])=>`<b>${f}</b> (${Math.round(o.low/o.n*100)}%)`).join(", ")}.</p>`:"")+`<div class="chips" style="margin-top:8px">${fpHtml}</div>`:NEED,"Low energy means 1 or 2. Phases show your top three feelings.")}
-  </div></div>`;
-}
 const archTabs=(cur)=>`<div class="subtabs">${[["days","Days"],["weeks","Weeks"],["months","Months"],["trends","Trends"],["insights","Insights"],["cycle","Cycle"]].map(([k,l])=>`<button class="${cur===k?"on":""}" data-act="go" data-h="#archive/${k}">${l}</button>`).join("")}</div>`;
 function archDays(){
   let ks=loggedDays().reverse();
@@ -1238,7 +1203,6 @@ document.addEventListener("click",e=>{
   else if(a==="pinDel"){pinView()[D.c]=0;persistLocal();pinMut(dk,D.c,it=>it.filter(p=>p.id!==D.id))}
   else if(a==="pinCardAdd"){const cs=dayPins(dk);sp(`days/${dk}/pins`,(cs.length?cs:[{id:"p0",items:[]}]).concat({id:uid(),items:[]}));save();render()}
   else if(a==="pinCardDel"){sp(`days/${dk}/pins`,dayPins(dk).filter(c=>c.id!==D.c));save();render()}
-  else if(a==="focus"){LS.focus=!LS.focus;persistLocal();render()}
   else if(a==="wide"){const mi=b.closest(".mi"),pg=R().name,cur=+mi.style.getPropertyValue("--w")||2,n=WS[(WS.indexOf(cur)+1)%WS.length],Lt=JSON.parse(JSON.stringify(LAY(pg)));Lt.w=Lt.w||{};Lt.w[D.id]=n;mi.style.setProperty("--w",n);sp("notes/layout/"+pg,Lt);save();if(window.muRefresh)muRefresh()}
   else if(a==="todoAdd"){const t=$("todoT").value.trim();if(!t)return;sp(D.w+"/todo",todoOf(D.w).concat({id:uid(),t,d:$("todoD").value,x:false}));save();render();setTimeout(()=>{const i=$("todoT");i&&i.focus()},50)}
   else if(a==="todoTog"){sp(D.w+"/todo",todoOf(D.w).map(x=>x.id===D.id?Object.assign({},x,{x:!x.x}):x));save();render()}
@@ -1414,7 +1378,7 @@ function chrome(){
   const r=R(),mo=monthNear(todayKey()),ss=starStats();
   const dpar=dayParts(todayKey()),dp=Math.round(dpar.filter(Boolean).length/dpar.length*100);
   document.documentElement.classList.toggle("pinned",pinned());
-  document.documentElement.classList.toggle("focus",!!LS.focus&&r.name==="today");
+  document.documentElement.classList.toggle("sheet",sheetOpen);
 
   const star=n=>`${n} star${n===1?"":"s"}`;
   const nav=NAVS.map(([k,l,ic])=>{const on=r.name===k;
@@ -1423,7 +1387,7 @@ function chrome(){
   const th=document.documentElement.dataset.theme||"dark",hs=HOUSES.find(h=>h[0]===LS.house)||HOUSES[0];
   const row=o=>`<button class="rr ${o.on?"on":""}" data-act="${o.act}" title="${o.t}" aria-label="${o.t}" ${o.pr!=null?`aria-pressed="${o.pr}"`:""} ${o.x||""}><span class="ic">${o.ic}</span><span class="lb">${o.l}${o.s?`<small>${o.s}</small>`:""}</span></button>`;
   const tools=[
-    row({act:"focus",t:"Focus mode (Today)",l:"Focus mode",ic:ico("crosshair",!!LS.focus),on:!!LS.focus,pr:!!LS.focus}),
+    row({act:"syncNow",t:"Sync now",l:"Sync",s:'<span class="syncstat"></span>',ic:'<span class="aic"><i class="ph ph-sync"></i><span class="syncdot sd"></span></span>'}),
     row({act:"pin",t:pinL,l:"Pin sidebar",ic:ico(pinned()?"push-pin":"push-pin-slash",pinned()),on:pinned(),pr:pinned()}),
     row({act:"cycleHouse",t:"Next accent colour",l:"Accent",s:`<span class="accLb">${esc(hs[1])}</span>`,ic:`<span class="aic">${ico("palette")}<span class="adot"></span></span>`}),
     row({act:"toggleTheme",t:"Light or dark",l:"Theme",s:`<span class="themeLb">${th==="dark"?"Dark":"Light"}</span>`,ic:'<span class="tg"></span>'})
@@ -1439,23 +1403,29 @@ function chrome(){
    <div class="rlab"><span class="lb">tools</span></div>
    <div class="rgrp">${tools}</div>
    <div class="rfoot">
-     <div class="rr ro"><span class="ic"><span class="syncdot"></span></span><span class="lb syncstat"></span></div>
      <a href="#settings" class="rr ${r.name==="settings"?"on":""}" title="Settings"><span class="ic">${ico("gear-six",r.name==="settings")}</span><span class="lb">Settings</span></a>
    </div></nav>`;
-  $("topbar").innerHTML=`<a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><div class="tools"><span class="syncdot"></span><a class="ib" href="#archive" aria-label="Archive"><i class="ph ph-archive"></i></a><button class="ib" data-act="focus" aria-label="Focus mode"><i class="ph ph-crosshair"></i></button><button class="ib" data-act="cycleHouse" aria-label="Accent colour"><span class="dot"></span></button><button class="ib" data-act="toggleTheme" aria-label="Light or dark"><span class="themeBtn"></span></button><a class="av" href="#settings" aria-label="Settings">${avatarHtml()}</a></div>`;
-  $("tabs").innerHTML=NAVS.filter(n=>TABS.includes(n[0])).map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
+  const hs2=HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" aria-label="${h[1]}" title="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("");
+  $("topbar").innerHTML=`<a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><div class="tools"><button class="ib" data-act="syncNow" aria-label="Sync now"><span class="aic"><i class="ph ph-sync"></i><span class="syncdot sd"></span></span></button><button class="ib avb" data-act="sheet" aria-label="Menu" aria-expanded="${sheetOpen}">${avatarHtml()}</button></div><div class="msheet"><div class="ms-h">Accent colour</div><div class="sw">${hs2}</div><div class="ms-h">Theme</div><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><a class="btn" href="#settings"><i class="ph ph-gear-six"></i>Settings</a><div class="ms-sync"><span class="syncdot"></span><span class="syncstat"></span><button class="btn sm solid" data-act="syncNow">Sync now</button></div></div>`;
+  $("tabs").innerHTML=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
 }
-let lastH=null;
-function render(){
-  const y=window.scrollY,r=R();
+let lastH=null,sheetOpen=false,lastInput=0,renderTok=0;
+["wheel","touchmove","keydown"].forEach(ev=>addEventListener(ev,()=>{lastInput=Date.now()},{passive:true}));
+document.addEventListener("click",e=>{if(sheetOpen&&!e.target.closest(".msheet,[data-act=sheet]")){sheetOpen=false;document.documentElement.classList.remove("sheet")}});
+function render(top){
+  const goTop=top===true,y=goTop?0:window.scrollY,r=R(),mn=$("main"),t0=Date.now(),tok=++renderTok;
+  if(!goTop)mn.style.minHeight=mn.offsetHeight+"px";
   muDestroy();chrome();applyLook();
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
-  $("main").classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
-  $("main").innerHTML=fn(r.arg);repGrow();
+  mn.classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
+  mn.innerHTML=fn(r.arg);repGrow();
   muInit();
-  setSyncState(syncing?"busy":syncMsg?"err":LS.lastSync?"ok":"",syncMsg);
+  setSyncState(syncing?"busy":syncMsg?"err":dirty&&LS.syncUrl?"pending":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
   window.scrollTo(0,y);
+  const again=()=>{if(tok===renderTok&&lastInput<=t0)window.scrollTo(0,y)};
+  requestAnimationFrame(again);setTimeout(again,150);
+  setTimeout(()=>{again();if(tok===renderTok)mn.style.minHeight=""},450);
   const tc=document.querySelector(".tile.cur");if(tc)tc.parentElement.scrollLeft=Math.max(0,tc.offsetLeft-20);
 }
 
@@ -1489,7 +1459,7 @@ function afterRemoteChange(){
   const a=document.activeElement;
   if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)){render();toast("Another device has been busy. This one is up to date now.")}
 }
-window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
+window.addEventListener("hashchange",()=>{sheetOpen=false;render(true)});
 
 /* in-place updates so typing never loses focus */
 function liveUpdate(){
@@ -1558,7 +1528,8 @@ document.addEventListener("click",async e=>{
    case"cycleHouse":{const n=(HOUSES.findIndex(h=>h[0]===LS.house)+1)%HOUSES.length;LS.house=HOUSES[n][0];persistLocal();applyLook();document.querySelectorAll(".accLb").forEach(e=>e.textContent=HOUSES[n][1]);toast("accent: "+HOUSES[n][1]);if(R().name==="settings")render();break}
    case"rmAvatar":sp("settings/avatar","");save();render();break;
    case"syncSave":saveConn();toast("connection saved");break;
-   case"syncNow":saveConn();await syncNow(true);if(R().name==="settings")render();break;
+   case"sheet":sheetOpen=!sheetOpen;document.documentElement.classList.toggle("sheet",sheetOpen);break;
+   case"syncNow":saveConn();persist();await syncNow(true);if(R().name==="settings")render();break;
    case"export":{LS.lastBackup=Date.now();persistLocal();const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="northstar-backup-"+todayKey()+".json";l.click();URL.revokeObjectURL(u);render();break}
    case"fold":{LS.fold=LS.fold||{};LS.fold[D.id]=!LS.fold[D.id];persistLocal();const c=$(D.id);if(c)c.classList.toggle("folded",!!LS.fold[D.id]);muRefresh();break}
    case"dense":LS.dense=D.v;persistLocal();applyLook();render();break;
