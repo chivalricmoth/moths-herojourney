@@ -1,4 +1,144 @@
 "use strict";
+/* north star extras: heat map, visual insights, muse of the day, feelings drawer. Loaded BEFORE app.js. */
+
+/* ---------- heat map: menstrual / moth / fox / hare (hues come from your accent palette) ---------- */
+const HEAT={mens:350,moth:270,fox:30,hare:180};
+const FAM={candle:["Moth",HEAT.moth],lantern:["Fox",HEAT.fox],bonfire:["Hare",HEAT.hare]};
+const hsa=(h,a=1)=>h==null?`hsl(var(--ah) var(--as) 50%/${a})`:`hsl(${h} 48% 52%/${a})`;
+const wroteDay=d=>Object.keys(d).some(x=>/^(j_|jfree$|win$|grat$|journal$)/.test(x)&&typeof d[x]==="string"&&stripH(d[x]).length>0);
+function heatCell(k){
+  const s=st.days[k]?dayStats(k):null;
+  if(!s||!s.has)return `<i title="${esc(short(k))}"></i>`;
+  const d=s.d,lv=s.done?(wroteDay(d)?3:2):1,o=[0,.3,.65,1][lv],ci=cycleInfo(k),m=ci&&ci.ph==="menstrual"?HEAT.mens:null,f=FAM[d.tier],fh=f?f[1]:null;
+  const bg=m!=null&&fh!=null?`linear-gradient(135deg,${hsa(m,o)} 50%,${hsa(fh,o)} 50%)`:hsa(m!=null?m:fh,o);
+  const t=[short(k),m!=null?"menstrual":"",f?f[0]+" day":"",["","logged","showed up","showed up + wrote"][lv]].filter(Boolean).join(" · ");
+  return `<i style="background:${bg}" title="${esc(t)}"></i>`;
+}
+const heatLegend=()=>`<div class="hleg"><div class="hl-row">${[["menstrual",HEAT.mens],["Moth",HEAT.moth],["Fox",HEAT.fox],["Hare",HEAT.hare]].map(([n,h])=>`<span><i style="background:${hsa(h)}"></i>${n}</span>`).join("")}<span><i style="background:linear-gradient(135deg,${hsa(HEAT.mens)} 50%,${hsa(HEAT.fox)} 50%)"></i>both (split)</span><span><i style="background:${hsa(null,.7)}"></i>no familiar picked</span></div><div class="hl-row">fainter to solid: <span class="ramp"><i style="opacity:.3"></i><i style="opacity:.65"></i><i></i></span> logged · showed up · showed up + wrote</div></div>`;
+
+/* ---------- muse of the day: by date, a full shuffle before any repeat, never the same two days running ---------- */
+function museIdx(dk){
+  const n=MUSES.length,d=dn(dk),c=Math.floor(d/n),i=((d%n)+n)%n;
+  const perm=cc=>{const a=[...Array(n).keys()];let s=((cc*2654435761)^0x9e3779b9)>>>0;const r=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296};for(let j=n-1;j>0;j--){const k=Math.floor(r()*(j+1));[a[j],a[k]]=[a[k],a[j]]}return a};
+  const p=perm(c);if(p[0]===perm(c-1)[n-1]){const t=p[0];p[0]=p[1];p[1]=t}
+  return p[i];
+}
+
+/* ---------- body card: feelings tucked into a drawer ---------- */
+let feelOpen=false;
+document.addEventListener("toggle",e=>{if(e.target.classList&&e.target.classList.contains("feelmore"))feelOpen=e.target.open},true);
+const feelBody=dk=>{const n=FEEL_X.filter(f=>gp(`days/${dk}/feel/${f}`)).length;return `<details class="symmore feelmore" ${n||feelOpen?"open":""}><summary><span class="ml" style="font-size:.85rem">How else do you feel?${n?` <small class="muted">· ${n} picked</small>`:""}</span></summary>${feelHtml(dk)}</details>`};
+
+/* ---------- insight visuals ---------- */
+const f1=v=>v==null?"–":(Math.round(v*10)/10).toString();
+function colChart(groups,series,o={}){
+  const max=o.max||5,W=Math.max(300,groups.length*(series.length*22+26)+40),H=190,L=26,T=16,B=o.sub?44:30,pw=W-L-6,ph=H-T-B,gw=pw/groups.length,bw=Math.min(26,gw/(series.length+1)),F=v=>o.pct?Math.round(v):f1(v);
+  let g="";
+  for(let i=0;i<=4;i++){const y=T+ph-ph*i/4;g+=`<line x1="${L}" x2="${W-4}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".1"/><text x="2" y="${y+3}">${F(max*i/4)}</text>`}
+  groups.forEach((gr,gi)=>{
+    const cx=L+gw*gi+gw/2,x0=cx-bw*series.length/2;
+    series.forEach((s,si)=>{const v=gr.v[si];if(v==null)return;const h=Math.max(2,ph*Math.min(1,v/max)),x=x0+si*bw,y=T+ph-h,fill=gr.c!=null?hsa(gr.c,si?.4:1):s.c;
+      g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${fill}"><title>${esc(gr.l)} · ${esc(s.name)}: ${F(v)}${o.pct?"%":""}</title></rect><text class="vl" x="${(x+(bw-2)/2).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="middle">${F(v)}</text>`});
+    g+=`<text class="gl" x="${cx}" y="${H-B+14}" text-anchor="middle">${esc(gr.l)}</text>`;
+    if(gr.s)g+=`<text x="${cx}" y="${H-B+26}" text-anchor="middle">${esc(gr.s)}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="color:var(--text);display:block;max-height:240px">${g}</svg>`;
+}
+function dumbbell(rows,o){
+  const P=v=>Math.max(0,Math.min(100,(v-1)/4*100));
+  return `<div class="dbl">${rows.map(r=>{const a=P(r.a),b=P(r.b);return `<div class="dr"><span>${r.l}</span><div class="dt"><u style="left:${Math.min(a,b)}%;width:${Math.abs(a-b)}%"></u><i class="pa" style="left:${a}%" title="${esc(o.an)}: ${f1(r.a)}"></i><i class="pb" style="left:${b}%" title="${esc(o.bn)}: ${f1(r.b)}"></i></div><span class="dv"><b>${f1(r.a)}</b> vs ${f1(r.b)}</span></div>`}).join("")}<div class="dleg"><span class="pa"></span>${o.an}<span class="pb"></span>${o.bn}<em>scale 1 to 5</em></div></div>`;
+}
+const barList=(rows,o={})=>`<div class="hbars">${rows.map(r=>`<div><span title="${esc(r.l)}">${esc(r.l)}</span><i style="--w:${Math.max(3,r.v/(o.max||100)*100)}%;${r.c!=null?`--hc:${hsa(r.c)}`:""}"></i><b class="num">${Math.round(r.v)}${o.u||""}</b></div>`).join("")}</div>`;
+const mxHtml=(heads,rows)=>`<div class="mx" style="grid-template-columns:minmax(64px,auto) repeat(${heads.length},minmax(0,1fr))"><span></span>${heads.map(h=>`<span class="h">${h}</span>`).join("")}${rows.map(([l,cs])=>`<span class="rl">${l}</span>`+cs.map(c=>c?`<b style="--bgc:${c.bg}" title="${esc(c.ti||"")}">${c.t}</b>`:`<b class="none"></b>`).join("")).join("")}</div>`;
+function donut(parts,total){
+  const R=42,C=2*Math.PI*R;let off=0;
+  const arcs=parts.filter(p=>p.n).map(p=>{const len=p.n/total*C,s=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${hsa(p.h)}" stroke-width="16" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"><title>${p.l}: ${p.n}</title></circle>`;off+=len;return s}).join("");
+  return `<svg viewBox="0 0 120 120" class="donut"><circle r="${R}" cx="60" cy="60" fill="none" stroke="var(--t08)" stroke-width="16"/>${arcs}<text x="60" y="60" text-anchor="middle" class="dn">${total}</text><text x="60" y="73" text-anchor="middle" class="ds">days</text></svg>`;
+}
+function pearson(xs,ys){const n=xs.length;if(n<6)return null;const mx=avg(xs),my=avg(ys);let a=0,b=0,c=0;for(let i=0;i<n;i++){const dx=xs[i]-mx,dy=ys[i]-my;a+=dx*dy;b+=dx*dx;c+=dy*dy}return b&&c?a/Math.sqrt(b*c):null}
+const CV=[["Sleep",s=>s.sleep],["Steps",s=>s.steps],["Water",s=>s.water],["Food",s=>s.kcal],["Mood",s=>s.mood],["Energy",s=>s.energy]];
+const ic2=(ic,t,body,note,cls="")=>`<div class="card ${cls}"><h3><i class="ph ph-${ic}"></i>${t}</h3>${note?`<p class="small muted" style="margin:-4px 0 12px">${note}</p>`:""}${body}</div>`;
+
+function archInsights(){
+  const ks=loggedDays(),S={};ks.forEach(k=>S[k]=dayStats(k));
+  if(ks.length<4)return `<p class="muted">Log a few more days (sleep, mood, energy, a familiar) and your patterns will draw themselves here.</p>`;
+  const HL=[],fel=k=>Object.keys(S[k].d.feel||{}).filter(f=>S[k].d.feel[f]);
+
+  /* correlations: everything against everything */
+  const cr=[];for(let i=1;i<CV.length;i++)for(let j=0;j<i;j++){const X=[],Y=[];ks.forEach(k=>{const a=CV[i][1](S[k]),b=CV[j][1](S[k]);if(a>0&&b>0){X.push(a);Y.push(b)}});cr.push({i,j,r:pearson(X,Y),n:X.length})}
+  const cell=(i,j)=>{const c=cr.find(x=>x.i===i&&x.j===j);if(!c||c.r==null)return{t:"–",bg:"transparent",ti:"not enough days yet"};const a=Math.min(1,Math.abs(c.r)*1.15);return{t:c.r.toFixed(2),bg:c.r>=0?`hsl(180 48% 46%/${a})`:`hsl(350 52% 52%/${a})`,ti:`${CV[i][0]} and ${CV[j][0]}: r = ${c.r.toFixed(2)} over ${c.n} days`}};
+  const corrHtml=mxHtml(CV.slice(0,5).map(c=>c[0]),CV.slice(1).map((c,ii)=>[c[0],CV.slice(0,5).map((_,j)=>j<=ii?cell(ii+1,j):null)]));
+  const top=cr.filter(c=>c.r!=null&&c.n>=8).sort((a,b)=>Math.abs(b.r)-Math.abs(a.r))[0];
+  if(top&&Math.abs(top.r)>=.2)HL.push(["link",`<b>${CV[top.i][0]} and ${CV[top.j][0]}</b> are your strongest link (r = ${top.r.toFixed(2)}): ${top.r>0?"they tend to rise together":"when one climbs the other drops"}.`]);
+
+  /* sleep */
+  const sl=[["under 6h",s=>s.sleep>0&&s.sleep<6],["6 to 7h",s=>s.sleep>=6&&s.sleep<7],["7h or more",s=>s.sleep>=7]].map(([l,f])=>({l,...insAvg(ks.map(k=>S[k]).filter(f))}));
+  const ok=sl.filter(x=>x.e!=null);
+  if(ok.length>1&&ok[ok.length-1].e!==ok[0].e)HL.push(["moon",`After <b>${ok[ok.length-1].l}</b> of sleep your energy averages <b>${f1(ok[ok.length-1].e)}</b>, against <b>${f1(ok[0].e)}</b> after ${ok[0].l}.`]);
+  const sleepC=ok.length?colChart(sl.map(x=>({l:x.l,s:x.n+" days",v:[x.e,x.m]})),[{name:"energy",c:"var(--acc)"},{name:"mood",c:"hsl(200 50% 60%)"}],{sub:1})+legend([{name:"energy",c:"var(--acc)"},{name:"mood",c:"hsl(200 50% 60%)"}]):NEED;
+
+  /* yesterday → today */
+  const prev=(f,g)=>{const y=[],n=[];ks.forEach(k=>{const p=S[addDays(k,-1)],q=addDays(k,-1);if(p&&p.has&&(S[k].energy||S[k].mood))(f(p)>=g(q)?y:n).push(S[k])});return[insAvg(y),insAvg(n)]};
+  const dr=[];
+  [["Steps goal",...prev(p=>p.steps,stepGoalFor)],["Water goal",...prev(p=>p.water,()=>+st.settings.waterGoal||8)]].forEach(([l,a,b])=>{if(a.e!=null&&b.e!=null)dr.push({l:l+" · energy",a:a.e,b:b.e});if(a.m!=null&&b.m!=null)dr.push({l:l+" · mood",a:a.m,b:b.m})});
+
+  /* phases */
+  const phs=Object.keys(PHASES).map(p=>({p,...phaseAvg(p)})).filter(x=>x.e!=null);
+  const phC=phs.length?colChart(phs.map(x=>({l:PHASES[x.p].name,s:x.n+" days",c:PHASES[x.p].hue,v:[x.e,x.m]})),[{name:"energy"},{name:"mood"}],{sub:1})+`<p class="small muted" style="margin-top:4px">solid = energy, pale = mood</p>`:NEED;
+  if(phs.length>1){const s=[...phs].sort((a,b)=>b.e-a.e);HL.push(["moon-stars",`Energy runs highest in your <b>${PHASES[s[0].p].name.toLowerCase()}</b> phase (${f1(s[0].e)}) and lowest in <b>${PHASES[s[s.length-1].p].name.toLowerCase()}</b> (${f1(s[s.length-1].e)}).`])}
+  const fp={};ks.forEach(k=>{const c=cycleInfo(k);if(c)fel(k).forEach(f=>{const o=fp[c.ph]=fp[c.ph]||{};o[f]=(o[f]||0)+1})});
+  const fpH=Object.keys(fp).map(p=>`<span class="chip phase" style="--ph:${PHASES[p].hue}">${PHASES[p].name}: ${Object.entries(fp[p]).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join(", ")}</span>`).join("");
+
+  /* familiars */
+  const tiered=ks.filter(k=>S[k].d.tier),tc={};tiered.forEach(k=>(tc[S[k].d.tier]=tc[S[k].d.tier]||[]).push(k));
+  const parts=TIERS.map(t=>({l:t[1],n:(tc[t[0]]||[]).length,h:FAM[t[0]][1]})),moth=tc.candle||[],ms=moth.filter(starred).length;
+  const xt=Object.keys(PHASES).map(p=>{const L=tiered.filter(k=>{const c=cycleInfo(k);return c&&c.ph===p});return[PHASES[p].name,TIERS.map(t=>{const n=L.filter(k=>S[k].d.tier===t[0]).length;return{n,t:n||"",bg:hsa(FAM[t[0]][1],n?Math.min(1,.18+n/Math.max(1,L.length)*.9):0),ti:`${PHASES[p].name} · ${t[1]}: ${n} days`}})]});
+  const famC=tiered.length?`<div class="fam">${donut(parts,tiered.length)}<div class="famlist">${parts.map(p=>`<span><i style="background:${hsa(p.h)}"></i><b>${p.l}</b> ${p.n} · ${Math.round(p.n/tiered.length*100)}%</span>`).join("")}</div></div><p class="small muted" style="margin:14px 0 6px">Which familiar you pick in each cycle phase</p>${mxHtml(TIERS.map(t=>t[1]),xt.map(r=>[r[0],r[1]]))}${moth.length?`<p class="small" style="margin-top:12px"><b>${ms}</b> of your <b>${moth.length}</b> Moth days still earned a star (${Math.round(ms/moth.length*100)}%). A Moth day counts in full.</p>`:""}`:NEED;
+  if(moth.length>=3)HL.push(["butterfly",`<b>${Math.round(ms/moth.length*100)}%</b> of your Moth days still earned a star. Small days count.`]);
+
+  /* weekday rhythm (new) */
+  const wd=Array.from({length:7},()=>[]);ks.forEach(k=>wd[(parse(k).getDay()+6)%7].push(S[k]));
+  const wdG=wd.map((L,i)=>({l:DN[i],s:L.length?L.length+"d":"",v:[L.length?L.filter(s=>s.done).length/L.length*100:null],n:L.length}));
+  const bw=wdG.filter(x=>x.n>=2).sort((a,b)=>b.v[0]-a.v[0]);
+  if(bw.length>1)HL.push(["calendar-dots",`<b>${bw[0].l}</b> is your strongest day (${Math.round(bw[0].v[0])}% showed up). <b>${bw[bw.length-1].l}</b> is the toughest (${Math.round(bw[bw.length-1].v[0])}%).`]);
+
+  /* rituals (new) */
+  const k90=ks.filter(k=>daysBetween(k,todayKey())<=90);
+  const rit=k90.length>=3?barList(RIT.map(r=>({l:r.l,v:k90.filter(k=>S[k].d.rit&&S[k].d.rit[r.id]).length/k90.length*100,c:{morning:30,day:180,evening:270}[r.g]})).sort((a,b)=>b.v-a.v),{u:"%"})+`<p class="small muted" style="margin-top:8px">last 90 days · ${k90.length} logged days · <span style="color:${hsa(30)}">●</span> morning <span style="color:${hsa(180)}">●</span> daytime <span style="color:${hsa(270)}">●</span> evening</p>`:NEED;
+
+  /* feelings by month */
+  const cnt={},byM={};ks.forEach(k=>fel(k).forEach(f=>{cnt[f]=(cnt[f]||0)+1;const m=byM[k.slice(0,7)]=byM[k.slice(0,7)]||{};m[f]=(m[f]||0)+1}));
+  const tf=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]),mos=Object.keys(byM).sort().slice(-6),mxc=Math.max(1,...mos.flatMap(m=>tf.map(f=>byM[m][f]||0)));
+  const feelC=tf.length&&mos.length?mxHtml(mos.map(m=>parse(m+"-01").toLocaleDateString(undefined,{month:"short"})),tf.map(f=>[f,mos.map(m=>{const n=byM[m][f]||0;return{n,t:n||"",bg:hsa(null,n?.12+n/mxc*.88:0),ti:`${f}, ${m}: ${n} days`}})])):NEED;
+
+  /* what clusters on low-energy days */
+  const lowD=ks.filter(k=>S[k].energy>0&&S[k].energy<=2),en=ks.filter(k=>S[k].energy>0).length,base=lowD.length/Math.max(1,en),fl={};
+  ks.forEach(k=>fel(k).forEach(f=>{const o=fl[f]=fl[f]||{n:0,low:0};o.n++;if(S[k].energy>0&&S[k].energy<=2)o.low++}));
+  const clus=Object.entries(fl).filter(([,o])=>o.n>=3&&o.low/o.n>base).sort((a,b)=>b[1].low/b[1].n-a[1].low/a[1].n).slice(0,6);
+  const clusC=clus.length?clus.map(([f,o])=>`<div class="lf"><span>${esc(f)}</span><div class="lt"><i style="width:${o.low/o.n*100}%"></i><u style="left:${base*100}%"></u></div><b class="num">${Math.round(o.low/o.n*100)}%</b></div>`).join("")+`<p class="small muted">bar = share of days with this feeling that were low-energy (1 or 2). Line = your usual (${Math.round(base*100)}%).</p>`:NEED;
+  if(clus.length)HL.push(["smiley-meh",`Low-energy days often come with feeling <b>${esc(clus[0][0])}</b> (${Math.round(clus[0][1].low/clus[0][1].n*100)}% of those days).`]);
+
+  /* weed */
+  const Y=ks.filter(k=>S[k].d.weed==="y").map(k=>S[k]),N=ks.filter(k=>S[k].d.weed==="n").map(k=>S[k]),wa=insAvg(Y),wb=insAvg(N),m=(L,f)=>{const v=nums(L.map(f).filter(x=>x>0));return v.length?avg(v):null};
+  const wr=[];if(wa.e!=null&&wb.e!=null)wr.push({l:"Energy",a:wa.e,b:wb.e});if(wa.m!=null&&wb.m!=null)wr.push({l:"Mood",a:wa.m,b:wb.m});
+  const ln=(l,L)=>L.length?`<b>${l}</b>: ${L.length} day${L.length===1?"":"s"} · sleep ${f1(m(L,s=>s.sleep))}h · ${r0(m(L,s=>s.steps))} steps`:"";
+  const weedC=Y.length||N.length?(wr.length?dumbbell(wr,{an:"weed day",bn:"no weed"}):"<p class='small muted'>Energy and mood need a few more logged days on each side.</p>")+`<p class="small" style="margin-top:12px">${[ln("Weed",Y),ln("No weed",N)].filter(Boolean).join("<br>")}</p>`:NEED;
+
+  return `<div class="insgrid">
+   ${HL.length?`<div class="ihls">${HL.slice(0,5).map(([ic,t])=>`<div class="ihl"><i class="ph ph-${ic}"></i><p>${t}</p></div>`).join("")}</div>`:""}
+   ${ic2("function","How everything moves together",corrHtml+`<div class="dleg" style="margin-top:10px"><span style="background:hsl(180 48% 46%)"></span>rise together<span style="background:hsl(350 52% 52%)"></span>one up, one down<em>r from -1 to 1. A pattern, never a cause.</em></div>`,"Every pair of things you track, across all logged days.","wide")}
+   ${ic2("bed","Sleep → energy and mood",sleepC)}
+   ${ic2("footprints","Yesterday’s goals → today",dr.length?dumbbell(dr,{an:"goal hit",bn:"goal missed"}):NEED,"Next-day energy and mood, depending on whether you hit the goal.")}
+   ${ic2("moon","Cycle phase",phC+(fpH?`<div class="chips" style="margin-top:10px">${fpH}</div>`:""),"Average energy and mood in each phase, plus your top feelings.")}
+   ${ic2("butterfly","Your familiars",famC)}
+   ${ic2("calendar-dots","Weekday rhythm",wdG.some(x=>x.n)?colChart(wdG,[{name:"showed up",c:"var(--acc)"}],{max:100,pct:1,sub:1}):NEED,"Share of logged days you showed up, by day of the week.")}
+   ${ic2("flame","Rituals you keep",rit)}
+   ${ic2("smiley","Feelings, month by month",feelC,"Your most-logged feelings; darker means more days.","wide")}
+   ${ic2("compass","What clusters on low-energy days",clusC)}
+   ${ic2("function","Weed days vs. not",weedC,"A pattern spotter, never a verdict.")}
+  </div>`;
+}
+"use strict";
 /* north star: state, sync, food, pages and events */
 
 /* ===== core: state, sync, helpers ===== */
