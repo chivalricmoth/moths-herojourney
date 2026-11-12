@@ -1,5 +1,5 @@
 /* Offline shell: network first (so updates from GitHub show up), cache as fallback. */
-const CACHE="northstar-shell-v15";
+const CACHE="northstar-shell-v16";
 const FILES=["./","index.html","style.css","content.js","app.js","manifest.json","icon.svg","calbert.png","favicon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
