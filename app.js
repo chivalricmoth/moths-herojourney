@@ -1,4 +1,11 @@
 const START="2026-11-01"; /* the journey begins here; nothing earlier is shown */
+function insMasonry(){
+  const g=document.querySelector(".insgrid");if(!g)return;
+  const run=()=>{g.classList.add("ms");[...g.children].forEach(c=>{c.style.gridRowEnd="";});const gap=14;[...g.children].forEach(c=>{c.style.gridRowEnd="span "+Math.ceil((c.getBoundingClientRect().height+gap)/8)})};
+  run();if(window.ResizeObserver){const ro=new ResizeObserver(()=>{clearTimeout(insMasonry.t);insMasonry.t=setTimeout(run,60)});[...g.children].forEach(c=>ro.observe(c));insMasonry.ro&&insMasonry.ro.disconnect();insMasonry.ro=ro}
+  setTimeout(run,300);
+}
+addEventListener("resize",()=>{if(document.querySelector(".insgrid"))insMasonry()});
 /* ---------- v16: rhythm planning, smaller-day nudge, responsive prompts, sync conflicts, motion, backups ---------- */
 const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],dowI=k=>(parse(k).getDay()+6)%7;
 const PRIOR={menstrual:2.4,follicular:3.4,ovulatory:3.9,luteal:3.0};
@@ -220,7 +227,6 @@ function archInsights(){
   return `<div class="insgrid">
    ${HL.length?`<div class="ihls">${HL.slice(0,5).map(([ic,t])=>`<div class="ihl"><i class="ph ph-${ic}"></i><p>${t}</p></div>`).join("")}</div>`:""}
    ${ic2("function","How everything moves together",corrHtml+`<div class="dleg" style="margin-top:10px"><span style="background:hsl(180 48% 46%)"></span>rise together<span style="background:hsl(350 52% 52%)"></span>one up, one down<em>r from -1 to 1. A pattern, never a cause.</em></div>`,"Every pair of things you track, across all logged days.","wide")}
-   <div class="inscol">
    ${ic2("bed","Sleep → energy and mood",sleepC)}
    ${ic2("footprints","Yesterday’s goals → today",dr.length?dumbbell(dr,{an:"goal hit",bn:"goal missed"}):NEED,"Next-day energy and mood, depending on whether you hit the goal.")}
    ${ic2("moon","Cycle phase",phC+(fpH?`<div class="chips" style="margin-top:10px">${fpH}</div>`:""),"Average energy and mood in each phase, plus your top feelings.")}
@@ -230,7 +236,6 @@ function archInsights(){
    ${ic2("compass","What clusters on low-energy days",clusC)}
    ${ic2("function","Weed days vs. not",weedC,"A pattern spotter, never a verdict.")}
   
-   </div>
    ${ic2("smiley","Feelings, month by month",feelC,"Your most-logged feelings; darker means more days.","wide")}</div>`;
 }
 "use strict";
@@ -1658,7 +1663,7 @@ function render(top){
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
   mn.classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
   mn.innerHTML=fn(r.arg);repGrow();
-  muInit();
+  muInit();insMasonry();
   setSyncState(syncing?"busy":syncMsg?"err":dirty&&LS.syncUrl?"pending":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
   window.scrollTo(0,y);
