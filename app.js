@@ -1,3 +1,96 @@
+const START="2026-11-01"; /* the journey begins here; nothing earlier is shown */
+/* ---------- v16: rhythm planning, smaller-day nudge, responsive prompts, sync conflicts, motion, backups ---------- */
+const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],dowI=k=>(parse(k).getDay()+6)%7;
+const PRIOR={menstrual:2.4,follicular:3.4,ovulatory:3.9,luteal:3.0};
+const LVL={push:["Push","deep work, big sessions, the hard conversation","flame"],steady:["Steady","the usual rituals and ordinary tasks","sun-horizon"],gentle:["Gentle","rest, admin, errands and soft landings","bed"]};
+let _rh=null,_rhK="";
+function rhythm(){
+  const L=loggedDays().filter(k=>dayStats(k).energy>0),key=L.length+"|"+(L[L.length-1]||"")+"|"+st.periods.length+"|"+(st.settings.cycleLen||"");
+  if(_rh&&_rhK===key)return _rh;
+  const ph={},dw=[[],[],[],[],[],[],[]],all=[];
+  L.forEach(k=>{const e=dayStats(k).energy;all.push(e);dw[dowI(k)].push(e);const c=cycleInfo(k);if(c)(ph[c.ph]=ph[c.ph]||[]).push(e)});
+  const base=avg(all)??3,pa={};
+  Object.keys(PRIOR).forEach(p=>{const a=ph[p]||[],w=Math.min(1,a.length/8),pr=base+PRIOR[p]-3.3;pa[p]={v:a.length?avg(a)*w+pr*(1-w):pr,n:a.length}});
+  _rh={base,pa,off:dw.map(a=>a.length>=3?(avg(a)-base)*Math.min(1,a.length/8):0),n:all.length};_rhK=key;return _rh;
+}
+function forecast(k){
+  const R=rhythm(),c=cycleInfo(k);let v=c?R.pa[c.ph].v:R.base;v+=R.off[dowI(k)]*.6;
+  return{v:Math.max(1,Math.min(5,v)),lvl:v>=R.base+.35?"push":v<=R.base-.35?"gentle":"steady",ph:c&&c.ph};
+}
+const runsOf=(F,l)=>{const o=[];let s=null,p=null;F.forEach(f=>{if(f.lvl===l){if(!s)s=f.k;p=f.k}else if(s){o.push([s,p]);s=null}});if(s)o.push([s,p]);return o};
+const runLbl=([a,b])=>a===b?short(a):md(a)+" – "+md(b);
+function rhBody(days,long){
+  const F=days.map(k=>({k,...forecast(k)})),R=rhythm(),t=todayKey(),cyc=st.settings.trackCycle!==false&&st.periods.length>0;
+  const strip=`<div class="rhs${long?" long":""}">${F.map(f=>{const P=f.ph?PHASES[f.ph]:null;return `<a class="rhd ${f.lvl}${f.k===t?" today":""}${f.k<t?" past":""}" href="#today/${f.k}" ${P?`style="--ph:${P.hue}"`:""} title="${esc(short(f.k))} · ${LVL[f.lvl][0]}${P?" · "+P.name:""}"><span class="rb"><i style="height:${Math.round(Math.max(10,f.v/5*100))}%"></i></span><b>${DOW[dowI(f.k)]}</b><small>${parse(f.k).getDate()}</small>${long?"":`<em>${LVL[f.lvl][0]}</em>`}</a>`}).join("")}</div>`;
+  const up=F.filter(f=>f.k>=t),rl=l=>{const r=runsOf(up.length?up:F,l).slice(0,3);return r.length?`<li class="${l}"><i class="ph ph-${LVL[l][2]}"></i><div><b>${LVL[l][0]} · ${r.map(runLbl).join(", ")}</b><span>${LVL[l][1]}</span></div></li>`:""};
+  const ls=["push","gentle","steady"].map(rl).join("");
+  const pb=cyc?`<div class="rpbs">${Object.keys(PHASES).map(p=>`<div class="rpb" style="--ph:${PHASES[p].hue}"><span>${PHASES[p].name}</span><div><i style="width:${R.pa[p].v/5*100}%"></i></div><b>${r1(R.pa[p].v)}</b><small>${R.pa[p].n?R.pa[p].n+" days":"typical"}</small></div>`).join("")}</div>`:"";
+  const note=!cyc&&R.n<5?"Log a period and a few days of energy and this turns into a plan that fits you.":R.n>=20?`Built from ${R.n} days of your own energy logs${cyc?" and your cycle":""}.`:`An early read: typical cycle patterns blended with your ${R.n} logged day${R.n===1?"":"s"}. It sharpens as you log energy.`;
+  return `${strip}<ul class="rhl">${ls||"<li class='steady'><i class='ph ph-sun-horizon'></i><div><b>Nothing stands out yet</b><span>Keep logging energy, and the shape will appear.</span></div></li>"}</ul>${pb}<p class="small muted" style="margin:10px 0 0">${note}</p>`;
+}
+/* if / then: a smaller day */
+function mvdCheck(dk,S,d){
+  if(d.mvdOff)return null;
+  const lowS=S.sleep>0&&S.sleep<6,lowM=S.mood>0&&S.mood<=2,lowE=S.energy>0&&S.energy<=2;
+  if(lowS&&(lowM||lowE))return `${S.sleep} hours of sleep and ${lowM?"a low mood":"low energy"}`;
+  if(S.mood===1&&lowE)return "a low mood and low energy";
+  if(S.energy===1)return "drained energy";
+  return null;
+}
+const mvdCard=(dk,why)=>{const r=RIT.filter(x=>x.t===0).slice(0,3),n=r.filter(x=>gp(`days/${dk}/rit/${x.id}`)).length;
+  return card("mvd","A smaller day","sparkle",`<p class="small" style="margin:0 0 10px">You logged ${esc(why)}. So here is a smaller day: three things, and that counts as showing up in full.</p><div class="mvd">${r.map(x=>`<button class="${gp(`days/${dk}/rit/${x.id}`)?"on":""}" data-act="tick" data-id="${x.id}"><i class="ph ph-${gp(`days/${dk}/rit/${x.id}`)?"checks":"circle-dashed"}"></i><span><b>${esc(x.l)}</b><small>${esc(x.s)}</small></span></button>`).join("")}</div><div class="inl" style="margin-top:10px;gap:10px;align-items:center"><span class="small muted">${n}/3 ${n>=3?"· that’s the day. Rest.":""}</span><button class="btn sm ghost" data-act="mvdOff" style="margin-left:auto">I’ve got more in me</button></div>`,{cls:"s4 mvdc"})};
+/* prompts that answer to the day */
+const RESP={
+ hard:["for a harder day",[
+  ["What would you say to a friend who had the day you’re having? Now say it to yourself, slowly.","You’re allowed to be kind to yourself on purpose. [He puts the kettle on without being asked.]"],
+  ["Which one thing was outside your control today, and which one small thing was actually yours?","Sorting those two piles is half the relief."],
+  ["What does tired-you need that clever-you keeps forgetting to provide?","Food, water, dark, quiet, a person. Pick two."]]],
+ great:["for a good day",[
+  ["What made today work? Name three conditions you could set up again on purpose.","A good day is data. Write it down while it’s warm."],
+  ["When did you feel most like yourself today, and what were you doing right before?","That’s the lead. Follow it."],
+  ["What did you do today that you’d like your future self to repeat?","Not a rule. An invitation."]]],
+ tender:["for a tender phase",[
+  ["What is your body asking for today, in plain words, and what would giving it that look like?","Rest is a plan. It’s allowed to be on the list."],
+  ["What can you put down or postpone this week without anything bad happening?","Check the real consequence. It’s usually small."],
+  ["What would feel like a soft landing at the end of today?","Describe it in detail. Then do one piece of it."]]],
+ showed:["for a day you showed up",[
+  ["What did showing up actually look like today, in practice? Be specific and a little proud.","Evidence beats feelings on a bad day later."],
+  ["Which small habit carried the day, and what made it easy?","Make that one easier still."],
+  ["What are you quietly getting better at?","Small, steady, and not yet visible to you."]]]};
+function respPrompt(dk,only){
+  const S=dayStats(dk),c=cycleInfo(dk),n=Math.floor(parse(dk)/864e5);
+  const hard=(S.mood>0&&S.mood<=2)||(S.energy>0&&S.energy<=2)||(S.sleep>0&&S.sleep<6);
+  const cat=hard?"hard":S.mood>=4&&S.energy>=4?"great":c&&c.ph==="menstrual"?"tender":S.done||S.rit>=3?"showed":null;
+  if(!cat||(only&&cat!==only))return null;
+  const p=RESP[cat];return{tag:p[0],q:p[1][n%p[1].length]};
+}
+/* sync conflicts */
+let CONF=[],confOpen=false;
+const confBody=o=>{const r={};Object.keys(o).forEach(f=>{if(f!=="_u")r[f]=o[f]});return r};
+function findConflicts(local,remote){
+  const ls=LS.lastSync||0,out=[];if(!ls)return out;
+  ["days","weeks","months"].forEach(c=>Object.keys(remote[c]||{}).forEach(k=>{
+    const x=(local[c]||{})[k],y=remote[c][k];if(!x||!y||(x._u||0)<=ls||(y._u||0)<=ls)return;
+    const a=confBody(x),b=confBody(y),diff=Object.keys({...a,...b}).filter(f=>JSON.stringify(a[f])!==JSON.stringify(b[f]));
+    if(diff.length&&!CONF.some(q=>q.c===c&&q.k===k))out.push({c,k,here:JSON.parse(JSON.stringify(x)),there:JSON.parse(JSON.stringify(y)),diff,win:(x._u||0)>=(y._u||0)?"here":"there"});
+  }));
+  return out;
+}
+const cpv=v=>v==null||v===""?"nothing":typeof v==="object"?"edited":String(v).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,34)||"nothing";
+function showConf(){
+  let e=document.getElementById("conf");
+  if(!CONF.length){if(e)e.remove();return}
+  if(!e){e=document.createElement("div");e.id="conf";e.setAttribute("role","status");document.body.appendChild(e)}
+  const lbl=x=>x.c==="days"?short(x.k):(x.c==="weeks"?"Week ":"Month ")+x.k;
+  e.className=confOpen?"open":"";
+  e.innerHTML=`<div class="cf-h"><i class="ph ph-sync"></i><span><b>${CONF.length} ${CONF.length===1?"entry was":"entries were"} edited on two devices.</b> I kept the newest.</span><button class="btn sm" data-act="confOpen">${confOpen?"Hide":"Review"}</button><button class="ib" data-act="confClear" aria-label="Dismiss"><i class="ph ph-x"></i></button></div>`+(confOpen?`<div class="cf-l">${CONF.map((x,i)=>`<div class="cf-i"><b>${esc(lbl(x))}</b>${x.diff.slice(0,4).map(f=>`<div class="cf-d"><em>${esc(f.replace(/^j_/,"journal ").replace(/_/g," "))}</em><span>this device: ${esc(cpv(x.here[f]))}</span><span>other device: ${esc(cpv(x.there[f]))}</span></div>`).join("")}${x.diff.length>4?`<small class="muted">+${x.diff.length-4} more</small>`:""}<div class="inl" style="gap:8px;margin-top:8px"><button class="btn sm ${x.win==="here"?"solid":""}" data-act="confPick" data-i="${i}" data-s="here">Keep this device${x.win==="here"?" ✓":""}</button><button class="btn sm ${x.win==="there"?"solid":""}" data-act="confPick" data-i="${i}" data-s="there">Keep other device${x.win==="there"?" ✓":""}</button></div></div>`).join("")}</div>`:"");
+}
+/* motion + backups */
+const calmNow=()=>LS.motion==="off"||(LS.motion!=="on"&&window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches);
+const applyMotion=()=>document.documentElement.classList.toggle("calm",calmNow());
+const bkAge=()=>{if(!LS.lastBackup)return"never";const d=Math.floor((Date.now()-LS.lastBackup)/864e5);return d<1?"today":d+"d ago"};
+const backupChip=t=>t&&loggedDays().length>=7&&(!LS.lastBackup||Date.now()-LS.lastBackup>14*864e5)?`<button class="chip warn" data-act="export"><i class="ph ph-export"></i>back up your data</button>`:"";
+
 "use strict";
 /* north star extras: heat map, visual insights, muse of the day, feelings drawer. Loaded BEFORE app.js. */
 
@@ -115,7 +208,7 @@ function archInsights(){
   const lowD=ks.filter(k=>S[k].energy>0&&S[k].energy<=2),en=ks.filter(k=>S[k].energy>0).length,base=lowD.length/Math.max(1,en),fl={};
   ks.forEach(k=>fel(k).forEach(f=>{const o=fl[f]=fl[f]||{n:0,low:0};o.n++;if(S[k].energy>0&&S[k].energy<=2)o.low++}));
   const clus=Object.entries(fl).filter(([,o])=>o.n>=3&&o.low/o.n>base).sort((a,b)=>b[1].low/b[1].n-a[1].low/a[1].n).slice(0,6);
-  const clusC=clus.length?clus.map(([f,o])=>`<div class="lf"><span>${esc(f)}</span><div class="lt"><i style="width:${o.low/o.n*100}%"></i><u style="left:${base*100}%"></u></div><b class="num">${Math.round(o.low/o.n*100)}%</b></div>`).join("")+`<p class="small muted">bar = share of days with this feeling that were low-energy (1 or 2). Line = your usual (${Math.round(base*100)}%).</p>`:NEED;
+  const clusC=clus.length?clus.map(([f,o])=>`<div class="lf"><span>${esc(f)}</span><div class="lfbar"><i style="width:${o.low/o.n*100}%"></i><u style="left:${base*100}%"></u></div><b class="num">${Math.round(o.low/o.n*100)}%</b></div>`).join("")+`<p class="small muted">bar = share of days with this feeling that were low-energy (1 or 2). Line = your usual (${Math.round(base*100)}%).</p>`:NEED;
   if(clus.length)HL.push(["smiley-meh",`Low-energy days often come with feeling <b>${esc(clus[0][0])}</b> (${Math.round(clus[0][1].low/clus[0][1].n*100)}% of those days).`]);
 
   /* weed */
@@ -127,16 +220,18 @@ function archInsights(){
   return `<div class="insgrid">
    ${HL.length?`<div class="ihls">${HL.slice(0,5).map(([ic,t])=>`<div class="ihl"><i class="ph ph-${ic}"></i><p>${t}</p></div>`).join("")}</div>`:""}
    ${ic2("function","How everything moves together",corrHtml+`<div class="dleg" style="margin-top:10px"><span style="background:hsl(180 48% 46%)"></span>rise together<span style="background:hsl(350 52% 52%)"></span>one up, one down<em>r from -1 to 1. A pattern, never a cause.</em></div>`,"Every pair of things you track, across all logged days.","wide")}
+   <div class="inscol">
    ${ic2("bed","Sleep → energy and mood",sleepC)}
    ${ic2("footprints","Yesterday’s goals → today",dr.length?dumbbell(dr,{an:"goal hit",bn:"goal missed"}):NEED,"Next-day energy and mood, depending on whether you hit the goal.")}
    ${ic2("moon","Cycle phase",phC+(fpH?`<div class="chips" style="margin-top:10px">${fpH}</div>`:""),"Average energy and mood in each phase, plus your top feelings.")}
    ${ic2("butterfly","Your familiars",famC)}
    ${ic2("calendar-dots","Weekday rhythm",wdG.some(x=>x.n)?colChart(wdG,[{name:"showed up",c:"var(--acc)"}],{max:100,pct:1,sub:1}):NEED,"Share of logged days you showed up, by day of the week.")}
    ${ic2("flame","Rituals you keep",rit)}
-   ${ic2("smiley","Feelings, month by month",feelC,"Your most-logged feelings; darker means more days.","wide")}
    ${ic2("compass","What clusters on low-energy days",clusC)}
    ${ic2("function","Weed days vs. not",weedC,"A pattern spotter, never a verdict.")}
-  </div>`;
+  
+   </div>
+   ${ic2("smiley","Feelings, month by month",feelC,"Your most-logged feelings; darker means more days.","wide")}</div>`;
 }
 "use strict";
 /* north star: state, sync, food, pages and events */
@@ -257,7 +352,7 @@ async function syncNow(manual){
     try{remote=JSON.parse(txt)}catch(e){throw new Error("The sync URL didn't return data. Check the URL, and that the web app is shared with “Anyone”.")}
     if(remote&&remote.error)throw new Error(remote.error);
     let changed=false;
-    if(remote&&remote.settings){const before=JSON.stringify(st);st=normalize(mergeState(st,normalize(remote)));changed=JSON.stringify(st)!==before}
+    if(remote&&remote.settings){const before=JSON.stringify(st),rn=normalize(remote),cf=findConflicts(st,rn);st=normalize(mergeState(st,rn));if(cf.length){CONF=CONF.concat(cf);showConf()}changed=JSON.stringify(st)!==before}
     try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
     const body=JSON.stringify({token:LS.token||"",data:st});
     try{
@@ -282,7 +377,7 @@ const avg=a=>{a=nums(a);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
 const r1=n=>n==null?"–":(Math.round(n*10)/10).toString();
 const r0=n=>n==null?"–":Math.round(n).toLocaleString();
 function dayStats(k){
-  const d=st.days[k]||{};
+  const d=k<START?{}:(st.days[k]||{});
   const rit=Object.values(d.rit||{}).filter(Boolean).length;
   const meals=d.meals||{};
   const kcal=Object.values(meals).reduce((a,m)=>a+(+m.k||0),0);
@@ -291,7 +386,7 @@ function dayStats(k){
   o.has=!!(rit||o.water||o.steps||o.sleep||o.mood||o.energy||mealsLogged||d.journal||d.win||d.grat||d.flow||d.done||d.weed||d.wake||d.bed);
   return o;
 }
-const loggedDays=()=>Object.keys(st.days).filter(k=>/^\d{4}-\d\d-\d\d$/.test(k)&&dayStats(k).has).sort();
+const loggedDays=()=>Object.keys(st.days).filter(k=>k>=START&&/^\d{4}-\d\d-\d\d$/.test(k)&&dayStats(k).has).sort();
 const stepGoalFor=k=>+st.settings.stepGoal||STEP_GOALS[k.slice(0,7)]||(k<"2026-11"?3000:10000);
 const monthOf=k=>{const id=k.slice(0,7);return M.find(m=>m.id===id)||null};
 const monthNear=k=>monthOf(k)||(k.slice(0,7)<M[0].id?M[0]:M[M.length-1]);
@@ -699,7 +794,7 @@ const kpi=(t,v,sub)=>`<div class="kpi"><div class="k">${t}</div><div class="stat
 
 const calHtml=t=>esc(t).replace(/\[([^\]]+)\]/g,'<i class="stage">[$1]</i>');
 const starred=k=>{const d=st.days[k];if(!d)return false;try{const S=dayStats(k);return !!(S.done||S.rit>=3)}catch(e){return !!d.done}};
-function starKeys(){const o={};Object.keys(st.days).forEach(k=>{if(DATE_RE.test(k)&&starred(k))o[k]=1});const ev=(st.notes&&st.notes.stars)||{};Object.keys(ev).forEach(k=>{if(DATE_RE.test(k))o[k]=1});return o}
+function starKeys(){const o={};Object.keys(st.days).forEach(k=>{if(k>=START&&DATE_RE.test(k)&&starred(k))o[k]=1});const ev=(st.notes&&st.notes.stars)||{};Object.keys(ev).forEach(k=>{if(DATE_RE.test(k))o[k]=1});return o}
 function starStats(){
   const set=starKeys(),ks=Object.keys(set).sort(),today=todayKey();let best=0;
   if(ks.length){let r=0,m=0;for(let k=ks[0];k<=today;k=addDays(k,1)){if(set[k]){r++;m=0;if(r>best)best=r}else{m++;if(m>=2){r=0;m=0}}}}
@@ -784,25 +879,25 @@ const rng=d=>`${md(d[0])} – ${md(d[6])}`;
 /* ---------- Today customisation ---------- */
 
 const denseSeg=()=>`<div class="seg">${[["cozy","Cozy"],["compact","Compact"]].map(([v,l])=>`<button class="${(LS.dense||"cozy")===v?"on":""}" data-act="dense" data-v="${v}">${l}</button>`).join("")}</div>`;
-const layoutCard=()=>`<div class="card"><h3><i class="ph ph-sliders-horizontal"></i>Layout</h3><label class="f" style="margin-top:0">Density</label>${denseSeg()}<p class="small muted" style="margin-top:8px">Drag cards by the middle light, change width with the right light, and collapse with the left. Focus mode is in the sidebar.</p><button class="btn sm" data-act="resetLayout" style="margin-top:8px">Reset layout</button></div>`;
+const layoutCard=()=>`<div class="card"><h3><i class="ph ph-sliders-horizontal"></i>Layout</h3><label class="f" style="margin-top:0">Density</label>${denseSeg()}<p class="small muted" style="margin-top:8px">Drag cards by the middle light, change width with the right light, and collapse with the left.</p><button class="btn sm" data-act="resetLayout" style="margin-top:8px">Reset layout</button></div>`;
 
 
 /* ============================================================ TODAY */
 function journalCard(dk,d){
-  const dn=Math.floor(parse(dk)/864e5),P=PROMPTS[jtab]||PROMPTS.reflect,q=P[dn%P.length];
+  const dn=Math.floor(parse(dk)/864e5),P=PROMPTS[jtab]||PROMPTS.reflect,rp=jtab==="reflect"?respPrompt(dk):jtab==="shadow"?respPrompt(dk,"hard"):null,q=rp?rp.q:P[dn%P.length];
   const has=!!gp(`days/${dk}/jfree`);
   return card("journal","Journal","notebook",`
    <div class="jtabs">${JT.map(([k,l,i])=>`<button class="${jtab===k?"on":""}" data-act="jtab" data-v="${k}"><i class="ph ph-${i}"></i>${l}${gp(`days/${dk}/j_${k}`)?'<span class="d"></span>':""}</button>`).join("")}</div>
-   <div class="prompt"><div><div class="q">${esc(q[0])}</div><div class="why">${calHtml(q[1]||"")}</div></div></div>
+   <div class="prompt"><div><div class="q">${rp?`<span class="ptag">${esc(rp.tag)}</span>`:""}${esc(q[0])}</div><div class="why">${calHtml(q[1]||"")}</div></div></div>
    ${rte(`days/${dk}/j_${jtab}`,"write until it’s out of your head…",250)}
    <details class="jfree" ${has?"open":""}><summary><span class="ml">Free write</span></summary>${rte(`days/${dk}/jfree`,"anything else…",110)}</details>
    <div class="trio"><div><label class="f" style="margin-top:0">One win</label>${txt(`days/${dk}/win`)}</div><div><label class="f" style="margin-top:0">Grateful for</label>${txt(`days/${dk}/grat`)}</div><div><label class="f" style="margin-top:0">Tomorrow’s first step</label>${txt(`days/${dk}/tomorrow`,"the very first physical action")}</div></div><label class="f">Reward I’m taking</label>${txt(`days/${dk}/reward`,"tea, bath, a chapter, a movie")}`,{cls:"s8 journal"});
 }
 
 function pToday(arg){
-  const dk=DATE_RE.test(arg)?arg:todayKey(),isToday=dk===todayKey();
+  const dk=DATE_RE.test(arg)?(arg<START?START:arg):todayKey(),isToday=dk===todayKey();
   const m=monthNear(dk),d=st.days[dk]||{},S=dayStats(dk);
-  const tier=d.tier||"lantern",ti=Math.max(0,TIERS.findIndex(t=>t[0]===tier));
+  const tier=d.tier||"lantern",mvd=mvdCheck(dk,S,d),ti=mvd?0:Math.max(0,TIERS.findIndex(t=>t[0]===tier));
   const dayN=Math.floor((parse(dk)-new Date(parse(dk).getFullYear(),0,0))/864e5);
   const mantra=MANTRAS[dayN%MANTRAS.length];
   const rits=RIT.filter(r=>r.t<=ti),ss=starStats();
@@ -849,14 +944,14 @@ function pToday(arg){
   }
 
   const museCard=card("muse","Muse of the day","star-four",`<div class="it" style="font-size:1.3rem;line-height:1.2">${esc(muse[0])}</div><div class="small muted" style="margin:2px 0 6px"><i>${esc(muse[1])}</i></div><p class="small">${esc(muse[2])}</p>`,{cls:"s4",r:"new every day"});
-  const nav=`<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,-1)}" aria-label="previous day">←</button>${isToday?"":`<button class="btn sm" data-act="go" data-h="#today">Today</button>`}<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,1)}" aria-label="next day">→</button>`;
+  const nav=`${dk>START?`<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,-1)}" aria-label="previous day">←</button>`:""}${isToday?"":`<button class="btn sm" data-act="go" data-h="#today">Today</button>`}<button class="btn sm" data-act="go" data-h="#today/${addDays(dk,1)}" aria-label="next day">→</button>`;
   const phChip=ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name}</span>`:"";
   const lineQ=calLine(dk)||LINES[Math.floor(parse(dk)/864e5)%LINES.length];
   if(isToday&&Array.isArray(st.notes.pins)&&st.notes.pins.length&&!dayPins(dk).length){sp(`days/${dk}/pins`,[{id:uid(),items:st.notes.pins}]);sp("notes/pins",[]);save()}
-  const cards=[nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)];
+  const cards=[...(mvd?[mvdCard(dk,mvd)]:[]),nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)];
 const tmEye=(isToday?"today":dk<todayKey()?"looking back":"looking ahead")+" · "+parse(dk).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}),
  tmH=isToday?`${greet}${nm?`, <em>${esc(nm)}</em>`:""}`:esc(short(dk)),
- tmChips=`${ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}"><i class="ph ph-moon"></i>${PHASES[ci.ph].name} · day ${ci.day}</span>`:""}<span class="chip"><i class="ph ph-star-four"></i>${ss.stars} star${ss.stars===1?"":"s"}${ss.run>1?" · run "+ss.run:""}</span><span class="chip"><i class="ph ph-flag"></i>${esc(m.ph)}</span>`;
+ tmChips=`${backupChip(isToday)}${ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}"><i class="ph ph-moon"></i>${PHASES[ci.ph].name} · day ${ci.day}</span>`:""}<span class="chip"><i class="ph ph-star-four"></i>${ss.stars} star${ss.stars===1?"":"s"}${ss.run>1?" · run "+ss.run:""}</span><span class="chip"><i class="ph ph-flag"></i>${esc(m.ph)}</span>`;
 return `<div class="tmast"><div class="tm-l"><div class="tm-top"><span class="tm-eye">${esc(tmEye)}</span><div class="tm-nav">${nav}</div></div><h1 class="tm-h">${tmH}</h1><div class="chips tm-chips">${tmChips}</div></div><div class="line"><img class="calmoth" src="calbert.png" alt="Calbert" title="Calbert"><span class="cl">${calHtml(lineQ||m.line)}</span></div></div>`+mu("today",cards);
 }
 function monthDone(mk){let n=0;Object.keys(st.days).forEach(k=>{if(k.startsWith(mk)&&dayStats(k).done)n++});return n}
@@ -1006,7 +1101,7 @@ function dayParts(k){const s=dayStats(k),d=s.d,wg=+st.settings.waterGoal||8,j=Ob
 function phaseAvg(ph){const L=loggedDays().filter(k=>{const c=cycleInfo(k);return c&&c.ph===ph}).map(dayStats);return insAvg(L)}
 
 function pWeek(arg){
-  const k=DATE_RE.test(arg)?arg:todayKey(),days=weekDays(k),wk=isoWeek(k),w=`weeks/${wk}`;wpW=w;
+  const k=DATE_RE.test(arg)?(arg<START?START:arg):todayKey(),days=weekDays(k),wk=isoWeek(k),w=`weeks/${wk}`;wpW=w;
   const S=days.map(dayStats),L=["M","T","W","T","F","S","S"];
   const wg=+st.settings.waterGoal||8,sgs=days.map(stepGoalFor),logged=S.filter(s=>s.has);
   const aSteps=avg(S.filter(s=>s.steps).map(s=>s.steps)),aSleep=avg(S.filter(s=>s.sleep).map(s=>s.sleep)),aWater=avg(S.filter(s=>s.water).map(s=>s.water));
@@ -1014,7 +1109,7 @@ function pWeek(arg){
   const showed=S.filter(s=>s.done).length,wdc=S.filter(s=>s.weed==="y").length;
   const prev=weekDays(addDays(days[0],-7)),next=weekDays(addDays(days[0],7)),pw=`weeks/${isoWeek(prev[0])}`;
   const cur=monday(todayKey()),rel=days[0]===cur?"this week":days[0]<cur?"a past week":"an upcoming week";
-  const strip=days.map((dk,i)=>{const s=S[i],ci=cycleInfo(dk),f=FACE[s.mood];return`<a class="day ${dk===todayKey()?"today":""}" href="#today/${dk}" ${ci?`style="background:hsl(${PHASES[ci.ph].hue} 40% 50%/.12)"`:""}><b>${L[i]}</b><div class="d num">${parse(dk).getDate()}</div><div class="face">${f?`<i class="ph-fill ph-${f}"></i>`:""}</div><div class="pips"><i class="pip ${s.done?"on":""}"></i><i class="pip ${s.water>=wg?"on":""}"></i><i class="pip ${s.steps>=sgs[i]?"on":""}"></i><i class="pip ${s.mealsLogged?"on":""}"></i></div></a>`}).join("");
+  const strip=days.map((dk,i)=>{if(dk<START)return`<span class="day void"></span>`;const s=S[i],ci=cycleInfo(dk),f=FACE[s.mood];return`<a class="day ${dk===todayKey()?"today":""}" href="#today/${dk}" ${ci?`style="background:hsl(${PHASES[ci.ph].hue} 40% 50%/.12)"`:""}><b>${L[i]}</b><div class="d num">${parse(dk).getDate()}</div><div class="face">${f?`<i class="ph-fill ph-${f}"></i>`:""}</div><div class="pips"><i class="pip ${s.done?"on":""}"></i><i class="pip ${s.water>=wg?"on":""}"></i><i class="pip ${s.steps>=sgs[i]?"on":""}"></i><i class="pip ${s.mealsLogged?"on":""}"></i></div></a>`}).join("");
 
   const sw=startW(),ww=weekWeight(k),ws=weightsSorted(),last=ws.length?ws[ws.length-1]:null,prevW=ww?ws.filter(x=>x.d<ww.d).pop():null,goal=+st.settings.goal||80;
   const defD=todayKey()>=days[0]&&todayKey()<=days[6]?todayKey():days[6];
@@ -1036,7 +1131,7 @@ function pWeek(arg){
    ${fld("One adjustment","If something slid, shrink it. Don’t add more, there’s no prize for a longer list.",txt(w+"/adj"))}
    ${fld("Protect and drop","One thing to guard, and one thing you’ll stop pretending you’ll do. The Lady has noticed the second one.",`${txt(w+"/protect","protect…")}<div style="height:6px"></div>${txt(w+"/drop","drop…")}`)}
    ${fld("Pleasure on purpose","Something to look forward to. I’m told this is allowed.",`${txt(w+"/movie","movie night pick")}<div style="height:6px"></div>${txt(w+"/adv","small adventure")}<div style="height:6px"></div>${txt(w+"/rw","reward for showing up")}`)}</div>`,{cls:"s6",r:esc(rng(next))});
-  const nav=`<button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],-7)}">←</button><button class="btn sm" data-act="go" data-h="#week">This week</button><button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],7)}">→</button>`;
+  const nav=`${days[0]>START?`<button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],-7)}">←</button>`:""}<button class="btn sm" data-act="go" data-h="#week">This week</button><button class="btn sm" data-act="go" data-h="#week/${addDays(days[0],7)}">→</button>`;
 const td=todayKey(),P=days.map(dayParts),past=days.map(x=>x<=td),sc=P.map((p,i)=>past[i]?p.filter(Boolean).length/7:null),live=sc.filter(x=>x!=null),score=live.length?Math.round(avg(live)*100):0,ss=starStats();
 let rn=0;const hot=S.map(s=>{rn=s.done?rn+1:0;return s.done&&rn>=3});
 const strk=days.map((dk,i)=>`<span class="${S[i].done?"on":""} ${hot[i]?"hot":""}" title="${esc(short(dk))}"><i class="ph${S[i].done?"-fill":""} ph-${!past[i]?"circle-dashed":S[i].done?"flame":"moon"}"></i>${L[i]}</span>`).join("");
@@ -1049,9 +1144,10 @@ const hero=card("whero","Week at a glance","sparkle",`<div class="whero"><div cl
 const tl=todoOf(w),tdn=tl.filter(x=>x.x).length,pv=todoOf(pw).filter(x=>!x.x);
 const todoCard=card("wtodo","To-do this week","check-square",`${bar(tdn,tl.length)}<ul class="todo" style="margin-top:8px">${tl.map(x=>`<li class="${x.x?"done":""}"><input type="checkbox" data-act="todoTog" data-w="${w}" data-id="${esc(x.id)}" ${x.x?"checked":""} aria-label="done"><span>${esc(x.t)}</span>${x.d?`<small class="muted">${esc(DN[(parse(x.d).getDay()+6)%7])}</small>`:""}<button class="tx" data-act="todoDel" data-w="${w}" data-id="${esc(x.id)}">remove</button></li>`).join("")}</ul>
  <div class="inl"><input type="text" id="todoT" placeholder="add a task…"><select id="todoD" style="width:auto"><option value="">any day</option>${days.map(dk=>`<option value="${dk}">${esc(short(dk))}</option>`).join("")}</select><button class="btn solid sm" data-act="todoAdd" data-w="${w}">Add</button></div>${pv.length?`<button class="btn sm ghost" style="margin-top:8px" data-act="todoCarry" data-w="${w}" data-pw="${pw}">Carry over ${pv.length} from last week</button>`:""}`,{cls:"s6",r:`${tdn}/${tl.length}`});
+const rhCard=card("wrhythm","Shape your week","chart-line-up",rhBody(days),{cls:"s8",r:"energy forecast"});
 return head("Week",`<span class="tag">${rel}</span>${esc(rng(days))}, ${parse(days[6]).getFullYear()}`,nav)+
  `<div class="wk">${strip}</div><div class="legend" style="margin:8px 0 14px"><span style="--lc:var(--acc)">dots: rituals · water · steps · food logged</span></div>`+
- mu("week",[hero,todoCard,wCard,statsCard,chartsCard,recapCard,repHtml(w,days[0].slice(0,7)),...wpCards(w),reviewCard,planCard]);
+ mu("week",[hero,rhCard,todoCard,wCard,statsCard,chartsCard,recapCard,repHtml(w,days[0].slice(0,7)),...wpCards(w),reviewCard,planCard]);
 }
 /* ============================================================ MONTH */
 function evCard(id){
@@ -1083,14 +1179,14 @@ function pickDay(keys){
   return c.length?c[Math.floor((LS.rnd==null?.37:LS.rnd)*c.length)%c.length]:null;
 }
 function pMonth(arg){
-  const id=MON_RE.test(arg)?arg:mkey(new Date()),m=M.find(x=>x.id===id),first=id+"-01",p=`months/${id}`;
+  const id=MON_RE.test(arg)?(arg<START.slice(0,7)?START.slice(0,7):arg):(mkey(new Date())<START.slice(0,7)?START.slice(0,7):mkey(new Date())),m=M.find(x=>x.id===id),first=id+"-01",p=`months/${id}`;
   const nxt=addMonths(id,1),nDays=parse(addDays(nxt+"-01",-1)).getDate();
   const keys=Array.from({length:nDays},(_,i)=>id+"-"+p2(i+1)),S=keys.map(dayStats),wg=+st.settings.waterGoal||8;
   let start=monday(first);const cells=[];
   while(cells.length<42){cells.push(start);start=addDays(start,1)}
   if(cells.slice(35).every(k=>k.slice(0,7)!==id))cells.length=35;
   const cal=["M","T","W","T","F","S","S"].map(x=>`<div class="h">${x}</div>`).join("")+cells.map(k=>{
-    const out=k.slice(0,7)!==id,s=dayStats(k),ci=cycleInfo(k),dots=(s.done?`<i></i>`:"")+(s.water>=wg?`<i class="w"></i>`:"")+(s.mealsLogged?`<i class="f"></i>`:"");
+    if(k<START)return`<span class="c void"></span>`;const out=k.slice(0,7)!==id,s=dayStats(k),ci=cycleInfo(k),dots=(s.done?`<i></i>`:"")+(s.water>=wg?`<i class="w"></i>`:"")+(s.mealsLogged?`<i class="f"></i>`:"");
     return`<a class="c ${out?"out":""} ${k===todayKey()?"today":""} ${ci?"ph":""} ${ci&&ci.pred?"pred":""}" ${ci?`style="--ph:${PHASES[ci.ph].hue}"`:""} href="#today/${k}" aria-label="${short(k)}"><span class="n num">${parse(k).getDate()}</span><span class="m">${dots}</span></a>`}).join("");
   const calCard=card("mcal","Calendar","calendar-blank",`<div class="cal">${cal}</div><div class="legend"><span style="--lc:var(--acc)">showed up</span><span style="--lc:hsl(200 50% 55%)">water goal</span><span style="--lc:var(--warn)">food logged</span>${st.settings.trackCycle!==false?Object.values(PHASES).map(x=>`<span style="--lc:hsl(${x.hue} 40% 55%)">${x.name.toLowerCase()}</span>`).join(""):""}</div>`,{cls:"s7"});
   const done=S.filter(s=>s.done).length,logged=S.filter(s=>s.has).length,left=keys.filter(k=>k>=todayKey()).length,pct=Math.round(done/nDays*100);
@@ -1127,7 +1223,7 @@ function pMonth(arg){
    <h2>reflection</h2>${gp(p+"/intent")?`<p><b>intention:</b> ${esc(gp(p+"/intent"))}</p>`:""}${mo3.length?`<p><b>top moments:</b> ${mo3.map(esc).join(" · ")}</p>`:""}${["taught","shadow","forward"].filter(f=>stripH(gp(p+"/"+f))).map(f=>`<div class="ph"><b>${{taught:"taught me",shadow:"shadow and growth",forward:"carrying forward"}[f]}</b>${safeHtml(gp(p+"/"+f))}</div>`).join("")}${stripH(gp(p+"/note"))?`<p>${esc(gp(p+"/note"))}</p>`:""}
    ${sn.length?`<h2>echoes: books · films · albums</h2>${sn.slice(0,5).map(x=>`<div class="snip">${esc(x.s)} <small>${esc(x.src)}</small></div>`).join("")}`:""}
    ${rk?`<h2>from the drawer · ${esc(md(rk))}</h2>${JF.filter(f=>stripH(rd[f[0]])).map(([f,l])=>`<div class="ph"><b>${l}</b>${safeHtml(rd[f])}</div>`).join("")}`:""}</div>`;
-  const nav=`<button class="btn sm" data-act="print"><i class="ph ph-printer"></i><span class="hide-m">Print review</span></button><button class="btn sm" data-act="go" data-h="#month/${addMonths(id,-1)}">←</button><button class="btn sm" data-act="go" data-h="#month">This month</button><button class="btn sm" data-act="go" data-h="#month/${addMonths(id,1)}">→</button>`;
+  const nav=`<button class="btn sm" data-act="print"><i class="ph ph-printer"></i><span class="hide-m">Print review</span></button>${id>START.slice(0,7)?`<button class="btn sm" data-act="go" data-h="#month/${addMonths(id,-1)}">←</button>`:""}<button class="btn sm" data-act="go" data-h="#month">This month</button><button class="btn sm" data-act="go" data-h="#month/${addMonths(id,1)}">→</button>`;
   return head("Month",monthLabel(id)+(m?` · ${bk(m.ph)}`:""),nav).replace("<h1>",`<h1 class="ghost" data-ghost="${m?m.gh:"month"}">`)+
    mu("month",[topCard,planCard,calCard,msCard,statsCard,wCard,bookCard,snipCard,randCard,reflect,evCard(id),detCard])+prn;
 }
@@ -1149,6 +1245,7 @@ function planRoadmap(){
   return `<div class="board">
    <section class="card tint s8"><div class="small muted" style="margin-bottom:6px">identity</div><p class="quote">“at my core, i am a maker of meaning. i am here to tell stories that matter, to end the harmful cycles before me, to break curses, and to be happy and joyful.”</p></section>
    <section class="card nowcard s4"><div class="nc"><div class="k">${esc(bk(now.ph))}</div><div class="t">${dn}/${tot}</div><div class="muted small">quests done</div></div><div class="ring" style="--p:${pct}"><b>${pct}%</b></div></section>
+   ${card("prhythm","Your rhythm, next 4 weeks","chart-line-up",rhBody(Array.from({length:28},(_,i)=>addDays(todayKey(),i)),true),{cls:"s12",r:"when to push, when to soften"})}
    ${card("proad","Roadmap","path",`<div class="tl">${tl}</div>`,{cls:"s12",r:"nov 2026 → dec 2027"})}
    ${card("pquarters","Quarters","map-trifold",`<div class="qs">${qs}</div>`,{cls:"s12"})}</div>`+planMap();
 }
@@ -1176,11 +1273,11 @@ function pVision(){
 function archSummary(){const ssA=starStats();
   const ks=loggedDays(),end=todayKey();
   const cells=[];
-  for(let k=monday(addDays(end,-364));k<=end;k=addDays(k,1))cells.push(heatCell(k));
+  {const f=monday(addDays(end,-364)),b=f<START?START:f;for(let q=(parse(b).getDay()+6)%7;q>0;q--)cells.push(`<i class="void"></i>`);for(let k=b;k<=end;k=addDays(k,1))cells.push(heatCell(k))}
   let run=0,best=0,showed=0,cur=0;
   if(ks.length)for(let k=ks[0];k<=end;k=addDays(k,1)){if(dayStats(k).done){run++;showed++;if(run>best)best=run}else run=0}
   let k=end;if(!dayStats(k).done)k=addDays(k,-1);while(dayStats(k).done){cur++;k=addDays(k,-1)}
-  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>The past year<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Stars",ssA.stars,"they only ever go up")}${kpi("Best Run",ssA.best+"<small> d</small>","consecutive starred days")}${ssA.run>0?kpi("Run now",ssA.run+"<small> d</small>","one missed day is forgiven"):""}</div><div class="heat">${cells.join("")}</div>${heatLegend()}</div>`;
+  return `<div class="card" style="margin-bottom:14px"><h3><i class="ph ph-calendar-check"></i>Since Nov 1<span class="r">each square is a day</span></h3><div class="tiles">${kpi("Days logged",ks.length,"all time")}${kpi("Showed up",showed,"days")}${kpi("Stars",ssA.stars,"they only ever go up")}${kpi("Best Run",ssA.best+"<small> d</small>","consecutive starred days")}${ssA.run>0?kpi("Run now",ssA.run+"<small> d</small>","one missed day is forgiven"):""}</div><div class="heat">${cells.join("")}</div>${heatLegend()}</div>`;
 }
 
 /* ============================================================ ARCHIVE */
@@ -1199,7 +1296,7 @@ function archDays(){
   return`<div class="arch">${ks.slice(0,250).map(k=>{const s=dayStats(k),ci=cycleInfo(k);return`<a class="arow" href="#today/${k}"><b>${short(k)}, ${parse(k).getFullYear()}</b><div class="chips">${s.done?chip("showed up",1):""}${s.rit?chip(s.rit+" rituals"):""}${s.water?chip(s.water+" water"):""}${s.steps?chip(s.steps.toLocaleString()+" steps"):""}${s.sleep?chip(s.sleep+"h sleep"):""}${s.kcal?chip(s.kcal.toLocaleString()+" kcal"):""}${s.mood?chip('<i class="ph ph-'+FACE[s.mood]+'"></i>'+MOODS[s.mood]):""}${s.energy?chip('<i class="ph ph-'+BATT[s.energy]+'"></i>'+ENERGY[s.energy]):""}${s.flow?chip("flow "+s.flow):""}${ci&&s.has?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}">${PHASES[ci.ph].name.toLowerCase()}</span>`:""}</div><span class="muted small" style="max-width:26ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.win)}</span></a>`}).join("")}</div>${ks.length>250?`<p class="muted small">Showing the latest 250 of ${ks.length}. Narrow with search or month.</p>`:""}`;
 }
 function archWeeks(){
-  const set={};loggedDays().forEach(k=>{set[monday(k)]=1});st.weights.forEach(w=>{set[monday(w.d)]=1});
+  const set={};loggedDays().forEach(k=>{set[monday(k)]=1});st.weights.forEach(w=>{if(w.d>=START)set[monday(w.d)]=1});
   const ws=Object.keys(set).sort().reverse();
   if(!ws.length)return`<p class="muted">Nothing in the drawer yet. Weeks appear here once you log days or a weigh-in.</p>`;
   return`<div class="arch">${ws.map(mo=>{const days=weekDays(mo),S=days.map(dayStats),w=weekWeight(mo),wk=isoWeek(mo),rv=st.weeks[wk]||{};
@@ -1283,7 +1380,7 @@ function planAtelier(){
 function pSettings(){
   const s=st.settings;
   const prof=`<div class="card"><h3>Profile</h3><div class="inl" style="gap:16px;align-items:center">${avatarHtml("lg")}<div style="flex:1"><label class="btn sm">Upload avatar<input type="file" id="avf" accept="image/*" style="display:none"></label> ${s.avatar?`<button class="btn sm ghost" data-act="rmAvatar">Remove</button>`:""}<p class="small muted" style="margin-top:6px">Shrunk to a small square on this device and synced with the rest of your data.</p></div></div><label class="f">Your name</label>${txt("settings/name","Morning Star, unless you say otherwise")}</div>`;
-  const look=`<div class="card"><h3>Look</h3><label class="f" style="margin-top:0">Theme</label><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><label class="f">Accent colour</label><div class="sw">${HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" title="${h[1]}" aria-label="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("")}</div><p class="small muted">Look settings are per device.</p></div>`;
+  const look=`<div class="card"><h3>Look</h3><label class="f" style="margin-top:0">Theme</label><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><label class="f">Accent colour</label><div class="sw">${HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" title="${h[1]}" aria-label="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("")}</div><label class="f">Motion</label><div class="seg">${[["auto","Auto"],["off","Calm"]].map(([v,l])=>`<button class="${(LS.motion||"auto")===v?"on":""}" data-act="motion" data-v="${v}">${l}</button>`).join("")}</div><p class="small muted">Auto follows your device’s reduced-motion setting. Calm turns every animation off. Look settings are per device.</p></div>`;
   const targets=`<div class="card"><h3>Targets</h3><div class="row"><div><label class="f" style="margin-top:0">Water goal (glasses)</label>${numIn("settings/waterGoal","8")}</div><div><label class="f" style="margin-top:0">Daily steps override</label>${numIn("settings/stepGoal","by month")}</div></div><div class="row"><div><label class="f">Calorie goal (optional)</label>${numIn("settings/calGoal","none")}</div><div><label class="f">Starting weight (lbs)</label>${numIn("settings/startW","","step=\".1\"")}</div><div><label class="f">Goal: lbs to lose in 2027</label>${numIn("settings/goal","80")}</div></div><p class="small muted" style="margin-top:8px">Leave the calorie goal empty to log without a target. A doctor or dietitian is the right person to set one.</p></div>`;
   const cyc=`<div class="card"><h3>Cycle</h3><label class="ck" style="border:0"><input type="checkbox" ${B("settings/trackCycle")} data-re="1" ${s.trackCycle!==false?"checked":""}><span>Track my cycle and show phase tips</span></label><div class="row"><div><label class="f">Usual cycle length (days)</label>${numIn("settings/cycleLen","28")}</div><div><label class="f">Usual period length (days)</label>${numIn("settings/periodLen","5")}</div></div><p class="small muted" style="margin-top:8px">Once you’ve logged a few periods, the app uses your own averages instead. Add or edit periods in Archive → Cycle.</p></div>`;
   const sync=`<div class="card"><h3>Sync across devices <span class="r"><span class="syncdot"></span><span class="syncstat"></span></span></h3><p class="small muted">Your data lives in this browser and, once connected, in a file in your own Google Drive. Sync merges both ways, so editing on your phone and your computer never overwrites either. Setup steps are in the README.</p><label class="f">Apps Script web-app URL</label><input type="url" id="syncUrl" value="${esc(LS.syncUrl)}" placeholder="https://script.google.com/macros/s/…/exec"><label class="f">Secret token (same one you put in the script)</label><input type="password" id="syncTok" value="${esc(LS.token)}" autocomplete="off" placeholder="a long random phrase"><label class="ck" style="border:0"><input type="checkbox" id="syncAuto" ${LS.auto?"checked":""}><span>Sync automatically when I open the app and after changes</span></label><div class="chips" style="margin-top:8px"><button class="btn solid" data-act="syncNow">Sync now</button><button class="btn" data-act="syncSave">Save connection</button></div><p class="small muted" style="margin-top:8px" id="saved"></p></div>`;
@@ -1528,6 +1625,8 @@ function chrome(){
   const row=o=>`<button class="rr ${o.on?"on":""}" data-act="${o.act}" title="${o.t}" aria-label="${o.t}" ${o.pr!=null?`aria-pressed="${o.pr}"`:""} ${o.x||""}><span class="ic">${o.ic}</span><span class="lb">${o.l}${o.s?`<small>${o.s}</small>`:""}</span></button>`;
   const tools=[
     row({act:"syncNow",t:"Sync now",l:"Sync",s:'<span class="syncstat"></span>',ic:'<span class="aic"><i class="ph ph-sync"></i><span class="syncdot sd"></span></span>'}),
+    row({act:"export",t:"Back up now",l:"Back up",s:`<span class="bkage">${bkAge()}</span>`,ic:ico("export")}),
+    row({act:"restorePick",t:"Restore from a backup file",l:"Restore",ic:ico("file")}),
     row({act:"pin",t:pinL,l:"Pin sidebar",ic:ico(pinned()?"push-pin":"push-pin-slash",pinned()),on:pinned(),pr:pinned()}),
     row({act:"cycleHouse",t:"Next accent colour",l:"Accent",s:`<span class="accLb">${esc(hs[1])}</span>`,ic:`<span class="aic">${ico("palette")}<span class="adot"></span></span>`}),
     row({act:"toggleTheme",t:"Light or dark",l:"Theme",s:`<span class="themeLb">${th==="dark"?"Dark":"Light"}</span>`,ic:'<span class="tg"></span>'})
@@ -1546,7 +1645,7 @@ function chrome(){
      <a href="#settings" class="rr ${r.name==="settings"?"on":""}" title="Settings"><span class="ic">${ico("gear-six",r.name==="settings")}</span><span class="lb">Settings</span></a>
    </div></nav>`;
   const hs2=HOUSES.map(h=>`<button data-act="pickHouse" data-h="${h[0]}" class="${LS.house===h[0]?"on":""}" aria-label="${h[1]}" title="${h[1]}" style="background:linear-gradient(hsl(${h[2]} ${h[3]}% 56%),hsl(${h[2]} ${h[3]}% 28%))"></button>`).join("");
-  $("topbar").innerHTML=`<a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><div class="tools"><button class="ib" data-act="syncNow" aria-label="Sync now"><span class="aic"><i class="ph ph-sync"></i><span class="syncdot sd"></span></span></button><button class="ib avb" data-act="sheet" aria-label="Menu" aria-expanded="${sheetOpen}">${avatarHtml()}</button></div><div class="msheet"><div class="ms-h">Accent colour</div><div class="sw">${hs2}</div><div class="ms-h">Theme</div><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><a class="btn" href="#settings"><i class="ph ph-gear-six"></i>Settings</a><div class="ms-sync"><span class="syncdot"></span><span class="syncstat"></span><button class="btn sm solid" data-act="syncNow">Sync now</button></div></div>`;
+  $("topbar").innerHTML=`<a class="wordmark" href="#today"><img class="wm" src="calbert.png" alt="">north star</a><div class="tools"><button class="ib" data-act="syncNow" aria-label="Sync now"><span class="aic"><i class="ph ph-sync"></i><span class="syncdot sd"></span></span></button><button class="ib avb" data-act="sheet" aria-label="Menu" aria-expanded="${sheetOpen}">${avatarHtml()}</button></div><div class="msheet"><div class="ms-h">Accent colour</div><div class="sw">${hs2}</div><div class="ms-h">Theme</div><div class="seg">${[["dark","Dark"],["light","Light"],["auto","Device"]].map(([v,l])=>`<button class="${LS.theme===v?"on":""}" data-act="theme" data-v="${v}">${l}</button>`).join("")}</div><a class="btn" href="#settings"><i class="ph ph-gear-six"></i>Settings</a><div class="ms-bk"><button class="btn sm" data-act="export"><i class="ph ph-export"></i>Back up</button><button class="btn sm" data-act="restorePick"><i class="ph ph-file"></i>Restore</button></div><div class="ms-sync"><span class="syncdot"></span><span class="syncstat"></span><button class="btn sm solid" data-act="syncNow">Sync now</button></div></div>`;
   $("tabs").innerHTML=NAVS.map(([k,l,ic])=>`<a href="#${k}" class="${r.name===k?"on":""}">${ico(ic,r.name===k)}${l}</a>`).join("");
 }
 let lastH=null,sheetOpen=false,lastInput=0,renderTok=0;
@@ -1555,7 +1654,7 @@ document.addEventListener("click",e=>{if(sheetOpen&&!e.target.closest(".msheet,[
 function render(top){
   const goTop=top===true,y=goTop?0:window.scrollY,r=R(),mn=$("main"),t0=Date.now(),tok=++renderTok;
   if(!goTop)mn.style.minHeight=mn.offsetHeight+"px";
-  muDestroy();chrome();applyLook();
+  muDestroy();chrome();applyLook();applyMotion();
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
   mn.classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
   mn.innerHTML=fn(r.arg);repGrow();
@@ -1639,6 +1738,12 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act,i=+b.dataset.i,dk=curDay(),D=b.dataset;
   switch(a){
+   case"mvdOff":sp(`days/${dk}/mvdOff`,1);save();render();break;
+   case"confOpen":confOpen=!confOpen;showConf();break;
+   case"confClear":CONF=[];confOpen=false;showConf();break;
+   case"confPick":{const x=CONF[i];if(x){if(x.win!==D.s){st[x.c][x.k]=JSON.parse(JSON.stringify(x[D.s]));st[x.c][x.k]._u=Date.now();save();render()}CONF.splice(i,1);if(!CONF.length)confOpen=false;showConf();if(LS.syncUrl){persist();syncNow()}}break}
+   case"motion":LS.motion=D.v;persistLocal();applyMotion();render();break;
+   case"restorePick":{const o=document.getElementById("imp");if(o)o.remove();const f=document.createElement("input");f.type="file";f.id="imp";f.accept=".json,application/json";f.style.display="none";document.body.appendChild(f);f.click();break}
    case"pin":LS.pinned=!LS.pinned;persistLocal();render();break;
    case"go":location.hash=D.h;break;
    case"tick":sp(`days/${dk}/rit/${D.id}`,true);save();render();celebrate(dk,false);break;
