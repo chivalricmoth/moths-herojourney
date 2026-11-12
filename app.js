@@ -875,7 +875,7 @@ function mu(pg,arr){
 function card(id,t,ic,body,o={}){
   const pg=R().name,inMu=MUP.includes(pg),m=(o.cls||"").match(/\bs(\d+)\b/),w=(LAY(pg).w||{})[id]||o.w||(m&&DWM[m[1]])||2;
   const lights=`<span class="lights"><button class="lt lt-fold" data-act="fold" data-id="${id}" data-g="–" aria-label="Collapse or expand" title="collapse"></button>${inMu?`<button class="lt lt-move" data-g="✥" aria-label="Drag to move" title="drag to move"></button><button class="lt lt-wide" data-act="wide" data-id="${id}" data-g="↔" aria-label="Change width" title="width"></button>`:""}</span>`;
-  const sec=`<section class="card ${o.cls||""} ${folded(id)?"folded":""}" id="${id}"><div class="cbar">${lights}<h3><i class="ph ph-${ic}"></i>${t}${o.r!=null?`<span class="r">${o.r}</span>`:""}</h3></div><div class="cb">${body}</div></section>`;
+  const sec=`<section class="card ${o.cls||""} ${folded(id)?"folded":""}" id="${id}"><div class="cbar" data-act="fold" data-id="${id}">${lights}<h3><i class="ph ph-${ic}"></i>${t}${o.r!=null?`<span class="r">${o.r}</span>`:""}</h3></div><div class="cb">${body}</div></section>`;
   return inMu?`<div class="mi" data-id="${id}" style="--w:${w}">${sec}</div>`:sec;
 }
 const fld=(lbl,why,body)=>`<div class="rv"><div class="qq">${lbl}</div><div class="why">${calHtml(why)}</div>${body}</div>`;
@@ -956,7 +956,7 @@ function pToday(arg){
   const cards=[...(mvd?[mvdCard(dk,mvd)]:[]),nowCard,lightCard,journalCard(dk,d),bodyCard,ritCard,mealsCard,needleCard,cycleCard,museCard,...pinsCards(dk)];
 const tmEye=(isToday?"today":dk<todayKey()?"looking back":"looking ahead")+" · "+parse(dk).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}),
  tmH=isToday?`${greet}${nm?`, <em>${esc(nm)}</em>`:""}`:esc(short(dk)),
- tmChips=`${backupChip(isToday)}${ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}"><i class="ph ph-moon"></i>${PHASES[ci.ph].name} · day ${ci.day}</span>`:""}<span class="chip"><i class="ph ph-star-four"></i>${ss.stars} star${ss.stars===1?"":"s"}${ss.run>1?" · run "+ss.run:""}</span><span class="chip"><i class="ph ph-flag"></i>${esc(m.ph)}</span>`;
+ tmChips=`${backupChip(isToday)}${ci?`<span class="chip phase" style="--ph:${PHASES[ci.ph].hue}"><i class="ph ph-moon"></i>${PHASES[ci.ph].name} · day ${ci.day}</span>`:""}<span class="chip" tabindex="0" title="Stars are earned on days you show up. A run is stars on consecutive days; one missed day is forgiven."><i class="ph ph-star-four"></i>${ss.run>1?ss.run+"-day run":ss.stars+" star"+(ss.stars===1?"":"s")}</span>`;
 return `<div class="tmast"><div class="tm-l"><div class="tm-top"><span class="tm-eye">${esc(tmEye)}</span><div class="tm-nav">${nav}</div></div><h1 class="tm-h">${tmH}</h1><div class="chips tm-chips">${tmChips}</div></div><div class="line"><img class="calmoth" src="calbert.png" alt="Calbert" title="Calbert"><span class="cl">${calHtml(lineQ||m.line)}</span></div></div>`+mu("today",cards);
 }
 function monthDone(mk){let n=0;Object.keys(st.days).forEach(k=>{if(k.startsWith(mk)&&dayStats(k).done)n++});return n}
@@ -1663,7 +1663,7 @@ function render(top){
   const fn={today:pToday,week:pWeek,month:pMonth,vision:pVision,archive:pArchive,plan:pPlan,settings:pSettings}[r.name]||pToday;
   mn.classList.toggle("enter",lastH!==location.hash);lastH=location.hash;
   mn.innerHTML=fn(r.arg);repGrow();
-  muInit();insMasonry();
+  muInit();insMasonry();["now","whero","mtop","proad"].forEach(x=>{const e=document.getElementById(x);if(e)e.classList.add("hero")});document.querySelectorAll(".subtabs").forEach(t=>{const o=t.querySelector(".on");if(o)t.scrollLeft=Math.max(0,o.offsetLeft-(t.clientWidth-o.offsetWidth)/2)});
   setSyncState(syncing?"busy":syncMsg?"err":dirty&&LS.syncUrl?"pending":LS.lastSync?"ok":"",syncMsg);
   setSaved(mem?"not saved on this device":"");
   window.scrollTo(0,y);
@@ -1781,7 +1781,7 @@ document.addEventListener("click",async e=>{
    case"sheet":sheetOpen=!sheetOpen;document.documentElement.classList.toggle("sheet",sheetOpen);break;
    case"syncNow":saveConn();persist();await syncNow(true);if(R().name==="settings")render();break;
    case"export":{LS.lastBackup=Date.now();persistLocal();const blob=new Blob([JSON.stringify(st,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download="northstar-backup-"+todayKey()+".json";l.click();URL.revokeObjectURL(u);render();break}
-   case"fold":{LS.fold=LS.fold||{};LS.fold[D.id]=!LS.fold[D.id];persistLocal();const c=$(D.id);if(c)c.classList.toggle("folded",!!LS.fold[D.id]);muRefresh();break}
+   case"fold":{if(b.classList.contains("cbar")&&innerWidth>760)break;LS.fold=LS.fold||{};LS.fold[D.id]=!LS.fold[D.id];persistLocal();const c=$(D.id);if(c)c.classList.toggle("folded",!!LS.fold[D.id]);muRefresh();break}
    case"dense":LS.dense=D.v;persistLocal();applyLook();render();break;
    case"resetLayout":LS.hide={};LS.fold={};LS.dense="cozy";sp("notes/layout",{});save();persistLocal();applyLook();render();toast("layout reset");break;
    case"visDel":sp("notes/vision",visOf().filter(v=>v.id!==D.id));save();render();break;
