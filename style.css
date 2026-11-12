@@ -1229,8 +1229,8 @@ html.sheet .msheet{display:flex}
 /* insights: column flow, no dead gaps */
 .insgrid{display:block}
 .insgrid>*{margin-bottom:var(--gap)}
-.inscol{column-width:340px;column-gap:var(--gap);margin-bottom:var(--gap)}
-.inscol>.card{break-inside:avoid;margin:0 0 var(--gap);display:block}
+
+
 .insgrid .ihls{display:grid}
 @media(max-width:760px){.insgrid{grid-template-columns:none!important}.inscol{column-width:auto;column-count:1}}
 /* motion */
@@ -1242,3 +1242,8 @@ html.calm *,html.calm *::before,html.calm *::after{animation:none!important;tran
 .heat i.void,.day.void,.cal .c.void{visibility:hidden;pointer-events:none;background:none;border:0}
 .heat{grid-template-rows:repeat(7,auto);grid-auto-columns:calc((100% - 52*3px)/53);justify-content:start;align-items:start}
 .heat i{width:100%;aspect-ratio:1}
+
+.insgrid.ms{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));grid-auto-rows:8px;grid-auto-flow:dense;column-gap:14px;row-gap:0;align-items:start}
+.insgrid.ms>*{margin:0!important;min-width:0}
+.insgrid.ms>.wide,.insgrid.ms>.ihls{grid-column:1/-1}
+.insgrid>.card{break-inside:auto}
