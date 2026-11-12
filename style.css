@@ -1247,3 +1247,23 @@ html.calm *,html.calm *::before,html.calm *::after{animation:none!important;tran
 .insgrid.ms>*{margin:0!important;min-width:0}
 .insgrid.ms>.wide,.insgrid.ms>.ihls{grid-column:1/-1}
 .insgrid>.card{break-inside:auto}
+
+/* ===== v17: hero hierarchy, phone card headers, tab hints, light-theme contrast ===== */
+:root[data-theme="light"]{--t55:color-mix(in srgb,var(--text) 64%,transparent);--t75:color-mix(in srgb,var(--text) 80%,transparent);--warn:hsl(30 80% 34%)}
+main .card:not(.hero){border-color:var(--t15);box-shadow:none}
+main .card:not(.hero) .cbar{background:var(--surf2);border-bottom-color:var(--t15)}
+main .card.hero{border-color:var(--accT);box-shadow:4px 4px 0 var(--a3),0 16px 44px var(--a1)}
+main .card.hero .cbar{background:linear-gradient(180deg,var(--a2),var(--a1)),var(--surf2)}
+.card.hero h3{color:var(--accT)}
+.cbar[data-act]{cursor:default}
+.subtabs{background:linear-gradient(90deg,var(--bg) 30%,#0000) 0 0/36px 100% no-repeat local,linear-gradient(270deg,var(--bg) 30%,#0000) 100% 0/36px 100% no-repeat local,linear-gradient(90deg,var(--t30),#0000) 0 0/12px 100% no-repeat scroll,linear-gradient(270deg,var(--t30),#0000) 100% 0/12px 100% no-repeat scroll}
+.subtabs button{min-height:40px}
+@media(max-width:760px){
+  .lights{display:none!important}
+  .cbar{cursor:pointer;min-height:46px;-webkit-user-select:none;user-select:none}
+  .cbar h3 .r{display:block;margin:2px 0 0;font-size:.68rem;opacity:.75;text-align:left}
+  .cbar h3{flex:1}
+  .cbar::after{content:"";width:9px;height:9px;margin:-4px 4px 0 auto;flex:none;border-right:2px solid var(--t55);border-bottom:2px solid var(--t55);transform:rotate(45deg);transition:transform .2s,margin .2s}
+  .card.folded .cbar::after{transform:rotate(-45deg);margin-top:0}
+  main .card.hero{box-shadow:2px 2px 0 var(--a3)}
+}
