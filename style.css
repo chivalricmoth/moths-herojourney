@@ -1240,3 +1240,5 @@ details[open]>:not(summary){animation:dopen .22s ease backwards}
 html.calm *,html.calm *::before,html.calm *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 
 .heat i.void,.day.void,.cal .c.void{visibility:hidden;pointer-events:none;background:none;border:0}
+.heat{grid-template-rows:repeat(7,auto);grid-auto-columns:calc((100% - 52*3px)/53);justify-content:start;align-items:start}
+.heat i{width:100%;aspect-ratio:1}
